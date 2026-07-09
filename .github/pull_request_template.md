@@ -1,29 +1,44 @@
-### Issue for this PR
+## Description
 
-Closes #
+<!-- Please include a summary of the changes and the related issue. -->
 
-### Type of change
+Fixes #(issue)
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Refactor / code improvement
-- [ ] Documentation
+## Type of Change
 
-### What does this PR do?
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to change)
+- [ ] Documentation update
+- [ ] Refactoring (no functional changes)
+- [ ] Performance improvement
+- [ ] Test addition or update
+- [ ] Build/CI change
+- [ ] Dependency update
 
-Please provide a description of the issue, the changes you made to fix it, and why they work. It is expected that you understand why your changes work and if you do not understand why at least say as much so a maintainer knows how much to value the PR.
+## Testing
 
-**If you paste a large clearly AI generated description here your PR may be IGNORED or CLOSED!**
+<!-- Describe the tests you ran and their results. -->
 
-### How did you verify your code works?
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing completed
+- [ ] No new warnings introduced
 
-### Screenshots / recordings
+## Checklist
 
-_If this is a UI change, please include a screenshot or recording._
+- [ ] Code follows project coding standards
+- [ ] Self-review completed
+- [ ] Documentation updated (README, CONTEXT.md, docs/, etc.)
+- [ ] Tests added or updated
+- [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
+- [ ] No sensitive data (secrets, API keys, tokens) committed
+- [ ] Changes are backward compatible (or breaking change noted above)
 
-### Checklist
+## Additional Context
 
-- [ ] I have tested my changes locally
-- [ ] I have not included unrelated changes in this PR
+<!-- Add any additional context, screenshots, or references. -->
 
-_If you do not follow this template your PR will be automatically rejected._
+## Related PRs or Issues
+
+<!-- List any related PRs, issues, or discussions. -->

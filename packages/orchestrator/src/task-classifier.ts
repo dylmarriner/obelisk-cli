@@ -54,7 +54,7 @@ const PATTERNS: { type: TaskType; patterns: RegExp[]; weight: number }[] = [
     type: "find_implementation",
     weight: 0.85,
     patterns: [
-      /where is/i, /find (the |where is )?(implementation|definition|code)/
+      /where is/i, /find (the |where is )?(implementation|definition|code)/i,
       /how is .+ implemented/i, /show me (the )?code for/i,
       /what does .+ do/i, /locate/i,
     ],

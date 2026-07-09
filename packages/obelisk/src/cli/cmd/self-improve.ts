@@ -3,7 +3,7 @@ import { Effect, Console } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
-import { SelfImprovementEngine, LearningTracker } from "@obelisk-ai/self-improve"
+import { SelfImprovementEngine, LearningTracker, SkillGenerator, AutoTriggerEngine, MemoryAugmentedLearning } from "@obelisk-ai/self-improve"
 
 export const SelfImproveCommand = cmd({
   command: "self-improve",
@@ -14,6 +14,9 @@ export const SelfImproveCommand = cmd({
       .command(SelfImproveScanCommand)
       .command(SelfImproveLearningsCommand)
       .command(SelfImproveEnableCommand)
+      .command(SelfImproveSkillsCommand)
+      .command(SelfImproveMetaCommand)
+      .command(SelfImproveTriggerCommand)
       .demandCommand(),
   async handler() {},
 })
@@ -231,6 +234,192 @@ const SelfImproveEnableCommand = effectCmd({
     Console.log("")
     Console.log("  Or scan without changes:")
     Console.log("    obelisk self-improve scan")
+    Console.log("")
+  }),
+})
+
+// ─── Skills Command ─────────────────────────────────────────────
+
+const SelfImproveSkillsCommand = effectCmd({
+  command: "skills",
+  describe: "generate and manage auto-discovered skills from learnings",
+  instance: false,
+  builder: (yargs: Argv) =>
+    yargs
+      .command(SkillsGenerateCommand)
+      .command(SkillsListCommand)
+      .demandCommand(),
+  async handler() {},
+})
+
+const SkillsGenerateCommand = effectCmd({
+  command: "generate",
+  describe: "generate new skills from recent learnings",
+  instance: false,
+  handler: Effect.fn("Cli.self-improve.skills.generate")(function* () {
+    const tracker = new LearningTracker()
+    const generator = new SkillGenerator()
+
+    Console.log("")
+    Console.log("  Generating skills from learnings...")
+    Console.log("")
+
+    const learnings = yield* Effect.promise(() => tracker.recent(100))
+    if (learnings.length === 0) {
+      Console.log("  No learnings available yet. Run some commands first.")
+      Console.log("")
+      return
+    }
+
+    const result = yield* Effect.promise(() => generator.generateFromLearnings(learnings))
+
+    if (result.created.length > 0) {
+      Console.log(`  ✓ Created ${result.created.length} new skill(s):`)
+      for (const skill of result.created) {
+        console.log(`    ${skill.meta.name} — ${skill.meta.description}`)
+      }
+      Console.log("")
+    }
+
+    if (result.updated.length > 0) {
+      Console.log(`  ✓ Updated ${result.updated.length} existing skill(s)`)
+      Console.log("")
+    }
+
+    if (result.skipped > 0) {
+      Console.log(`  ⚠ ${result.skipped} pattern(s) skipped (below confidence threshold)`)
+      Console.log("")
+    }
+
+    if (result.created.length === 0 && result.updated.length === 0) {
+      Console.log("  No new skills generated. Existing skills are up to date.")
+      Console.log("")
+    }
+  }),
+})
+
+const SkillsListCommand = effectCmd({
+  command: "list",
+  describe: "list all auto-generated skills",
+  instance: false,
+  handler: Effect.fn("Cli.self-improve.skills.list")(function* () {
+    const generator = new SkillGenerator()
+    const skills = generator.listSkills()
+
+    Console.log("")
+    Console.log("  Auto-Generated Skills")
+    Console.log("  " + "─".repeat(40))
+    Console.log("")
+
+    if (skills.length === 0) {
+      Console.log("  No auto-generated skills found.")
+      Console.log("")
+      return
+    }
+
+    for (const skill of skills) {
+      console.log(`  ${skill.meta.name}`)
+      console.log(`    ${skill.meta.description}`)
+      console.log(`    Source: ${skill.meta.source}  |  Version: ${skill.meta.version || 1}`)
+      if (skill.meta.triggers?.length) {
+        console.log(`    Triggers: ${skill.meta.triggers.join(", ")}`)
+      }
+      console.log("")
+    }
+  }),
+})
+
+// ─── Meta Learning Command ──────────────────────────────────────
+
+const SelfImproveMetaCommand = effectCmd({
+  command: "meta",
+  describe: "show meta-learning state and scanner performance",
+  instance: false,
+  handler: Effect.fn("Cli.self-improve.meta")(function* () {
+    const tracker = new LearningTracker()
+    const meta = new MemoryAugmentedLearning(tracker)
+
+    Console.log("")
+    Console.log("  Meta-Learning State")
+    Console.log("  " + "─".repeat(40))
+    Console.log("")
+
+    const state = yield* Effect.promise(() => meta.getState())
+
+    Console.log(`  Cycles completed: ${state.cycleCount}`)
+    if (state.lastCycleOutcome) {
+      const o = state.lastCycleOutcome
+      Console.log(`  Last cycle: ${o.findingsCount} findings, ${o.autoFixedCount} auto-fixed`)
+      Console.log(`  Validation: ${o.validationPassed ? "✓ passed" : "✗ failed"}`)
+      Console.log(`  PR created: ${o.prCreated ? "✓ yes" : "— no"}`)
+      if (o.prAccepted !== undefined) {
+        Console.log(`  PR accepted: ${o.prAccepted ? "✓ yes" : "✗ no"}`)
+      }
+    }
+    Console.log("")
+
+    Console.log("  Scanner Priorities:")
+    const priorities = meta.getScannerPriorities()
+    for (const p of priorities) {
+      const icon = p.priority === "high" ? "✓" : p.priority === "medium" ? "→" : "↓"
+      console.log(`    ${icon} ${p.scanner.padEnd(15)} ${p.priority}`)
+    }
+    Console.log("")
+
+    if (state.learnedPatterns.length > 0) {
+      Console.log(`  Learned patterns: ${state.learnedPatterns.length}`)
+      for (const p of state.learnedPatterns.slice(0, 5)) {
+        console.log(`    • ${p.substring(0, 80)}`)
+      }
+      Console.log("")
+    }
+
+    if (state.prunedPatterns.length > 0) {
+      Console.log(`  Pruned patterns: ${state.prunedPatterns.length}`)
+    }
+  }),
+})
+
+// ─── Trigger Command ────────────────────────────────────────────
+
+const SelfImproveTriggerCommand = effectCmd({
+  command: "trigger",
+  describe: "check which skills would be auto-triggered in current context",
+  instance: false,
+  handler: Effect.fn("Cli.self-improve.trigger")(function* () {
+    const engine = new AutoTriggerEngine()
+    const tracker = new LearningTracker()
+
+    Console.log("")
+    Console.log("  Auto-Trigger Evaluation")
+    Console.log("  " + "─".repeat(40))
+    Console.log("")
+
+    const recentLearnings = yield* Effect.promise(() => tracker.recent(20))
+
+    const context = {
+      command: process.argv.slice(2).join(" "),
+      cwd: process.cwd(),
+      recentLearnings,
+    }
+
+    const matches = engine.evaluate(context)
+
+    if (matches.length === 0) {
+      Console.log("  No matching skills for current context.")
+      Console.log("")
+      return
+    }
+
+    Console.log(`  Found ${matches.length} matching skill(s):`)
+    Console.log("")
+
+    for (const match of matches.slice(0, 10)) {
+      const confidence = (match.confidence * 100).toFixed(0)
+      const autoTrigger = match.confidence >= 0.7 ? " 🔧 auto" : ""
+      console.log(`  ${confidence}%  ${match.skillName}${autoTrigger}`)
+      console.log(`       ${match.reason}`)
+    }
     Console.log("")
   }),
 })

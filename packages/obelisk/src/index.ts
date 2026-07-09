@@ -30,6 +30,7 @@ import { NexusCommand } from "./cli/cmd/nexus"
 import { MemoryCommand } from "./cli/cmd/memory"
 import { BudgetCommand, PolicyCommand } from "./cli/cmd/budget"
 import { IndexCommand, SearchCommand } from "./cli/cmd/search"
+import { AstCommand } from "./cli/cmd/ast"
 import { EngineCommand } from "./cli/cmd/engine"
 import { DoctorCommand } from "./cli/cmd/doctor"
 import { ConfigCommand } from "./cli/cmd/config"
@@ -115,6 +116,7 @@ const cli = yargs(args)
   .command(PolicyCommand)
   .command(IndexCommand)
   .command(SearchCommand)
+  .command(AstCommand)
   .command(ConfigCommand)
   .command(DoctorCommand)
   .command(EngineCommand)

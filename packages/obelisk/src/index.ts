@@ -28,6 +28,7 @@ import { SessionCommand } from "./cli/cmd/session"
 import { DbCommand } from "./cli/cmd/db"
 import { NexusCommand } from "./cli/cmd/nexus"
 import { MemoryCommand } from "./cli/cmd/memory"
+import { BudgetCommand, PolicyCommand } from "./cli/cmd/budget"
 import { EngineCommand } from "./cli/cmd/engine"
 import { DoctorCommand } from "./cli/cmd/doctor"
 import { ConfigCommand } from "./cli/cmd/config"
@@ -109,6 +110,8 @@ const cli = yargs(args)
   .command(DbCommand)
   .command(NexusCommand)
   .command(MemoryCommand)
+  .command(BudgetCommand)
+  .command(PolicyCommand)
   .command(ConfigCommand)
   .command(DoctorCommand)
   .command(EngineCommand)

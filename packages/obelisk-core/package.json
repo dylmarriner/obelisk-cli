@@ -1,0 +1,16 @@
+{
+  "name": "@obelisk-ai/obelisk-core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsgo --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./token": "./src/token-budget-manager.ts",
+    "./policy": "./src/policy-engine.ts",
+    "./prompt": "./src/prompt-assembler.ts",
+    "./redact": "./src/secret-redactor.ts"
+  }
+}

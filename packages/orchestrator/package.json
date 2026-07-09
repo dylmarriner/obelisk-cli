@@ -8,5 +8,12 @@
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@obelisk-ai/memory": "workspace:*",
+    "@obelisk-ai/obelisk-core": "workspace:*",
+    "@obelisk-ai/search": "workspace:*",
+    "@obelisk-ai/semantic": "workspace:*",
+    "@obelisk-ai/structural": "workspace:*"
   }
 }

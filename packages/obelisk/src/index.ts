@@ -26,6 +26,8 @@ import { WebCommand } from "./cli/cmd/web"
 import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
 import { DbCommand } from "./cli/cmd/db"
+import { NexusCommand } from "./cli/cmd/nexus"
+import { MemoryCommand } from "./cli/cmd/memory"
 import { EngineCommand } from "./cli/cmd/engine"
 import { DoctorCommand } from "./cli/cmd/doctor"
 import { ConfigCommand } from "./cli/cmd/config"
@@ -105,6 +107,8 @@ const cli = yargs(args)
   .command(SessionCommand)
   .command(PluginCommand)
   .command(DbCommand)
+  .command(NexusCommand)
+  .command(MemoryCommand)
   .command(ConfigCommand)
   .command(DoctorCommand)
   .command(EngineCommand)

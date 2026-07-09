@@ -115,7 +115,7 @@ async function backupAndStripLegacy(file: string, source: string) {
 async function obeliskFiles(input: { directories: string[]; cwd: string }) {
   const files = [
     ...ConfigPaths.fileInDirectory(Global.Path.config, "obelisk"),
-    ...(await Filesystem.findUp(["obelisk.json", "obelisk.jsonc"], input.cwd, undefined, { rootFirst: true })),
+    ...(await Filesystem.findUp(["obelisk.json", "obelisk.jsonc", "obelisk.config.json", "obelisk.config.jsonc"], input.cwd, undefined, { rootFirst: true })),
   ]
   for (const dir of unique(input.directories)) {
     files.push(...ConfigPaths.fileInDirectory(dir, "obelisk"))

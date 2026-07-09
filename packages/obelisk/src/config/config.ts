@@ -404,7 +404,12 @@ const layer = Layer.effect(
         }
 
         if (!Flag.OBELISK_DISABLE_PROJECT_CONFIG) {
+          // Load standard obelisk config files
           for (const file of yield* ConfigPaths.files("obelisk", ctx.directory, ctx.worktree).pipe(Effect.orDie)) {
+            yield* merge(file, yield* loadFile(file, authEnv), "local")
+          }
+          // Also load obelisk.config.jsonc for project-level extended config
+          for (const file of yield* ConfigPaths.files("obelisk.config", ctx.directory, ctx.worktree).pipe(Effect.orDie)) {
             yield* merge(file, yield* loadFile(file, authEnv), "local")
           }
         }

@@ -393,10 +393,20 @@ export const McpLogoutCommand = effectCmd({
 
 async function resolveConfigPath(baseDir: string, global = false) {
   // Check for existing config files (prefer .jsonc over .json, check .obelisk/ subdirectory too)
-  const candidates = [path.join(baseDir, "obelisk.json"), path.join(baseDir, "obelisk.jsonc")]
+  const candidates = [
+    path.join(baseDir, "obelisk.json"),
+    path.join(baseDir, "obelisk.jsonc"),
+    path.join(baseDir, "obelisk.config.json"),
+    path.join(baseDir, "obelisk.config.jsonc"),
+  ]
 
   if (!global) {
-    candidates.push(path.join(baseDir, ".obelisk", "obelisk.json"), path.join(baseDir, ".obelisk", "obelisk.jsonc"))
+    candidates.push(
+      path.join(baseDir, ".obelisk", "obelisk.json"),
+      path.join(baseDir, ".obelisk", "obelisk.jsonc"),
+      path.join(baseDir, ".obelisk", "obelisk.config.json"),
+      path.join(baseDir, ".obelisk", "obelisk.config.jsonc"),
+    )
   }
 
   for (const candidate of candidates) {

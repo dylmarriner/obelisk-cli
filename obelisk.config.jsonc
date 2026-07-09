@@ -1,0 +1,101 @@
+{
+  "$schema": "https://obelisk.dev/schema/obelisk.config.json",
+
+  "project": {
+    "name": "obelisk-cli",
+    "root": ".",
+    "localFirst": true
+  },
+
+  "nexus": {
+    "enabled": true,
+    "endpoint": "http://100.68.0.96:7777",
+    "transport": "tailscale",
+    "apiKeyEnv": "NEXUS_API_KEY",
+    "healthPath": "/health",
+    "timeoutMs": 5000,
+    "healthTimeoutMs": 1500,
+    "retries": 3,
+    "retryBackoffMs": [250, 750, 1500],
+    "offlineCachePath": ".obelisk/cache/memory-outbox.sqlite",
+    "syncOnReconnect": true,
+    "circuitBreaker": {
+      "enabled": true,
+      "failureThreshold": 5,
+      "cooldownMs": 300000
+    }
+  },
+
+  "obelisk": {
+    "tokenControl": {
+      "enabled": true,
+      "maxInputTokens": 120000,
+      "reserveOutputTokens": 12000,
+      "maxToolResultTokens": 24000,
+      "contextPolicy": "compact-first"
+    },
+    "policy": {
+      "denySecretFiles": true,
+      "requireApprovalForDangerousCommands": true,
+      "blockEnvFileUpload": true,
+      "blockPrivateKeyUpload": true,
+      "allowFilesystemWrites": true,
+      "allowShellCommands": "approval-required"
+    }
+  },
+
+  "tools": {
+    "zoekt": {
+      "enabled": true,
+      "mode": "subprocess",
+      "indexPath": ".obelisk/index/zoekt",
+      "autoIndex": true,
+      "binary": "zoekt"
+    },
+    "serena": {
+      "enabled": true,
+      "mode": "mcp",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server"
+      ]
+    },
+    "astGrep": {
+      "enabled": true,
+      "mode": "subprocess",
+      "binary": "ast-grep"
+    },
+    "cocoIndex": {
+      "enabled": false,
+      "mode": "plugin",
+      "purpose": "future-incremental-indexing"
+    }
+  },
+
+  "models": {
+    "default": "anthropic/claude-sonnet",
+    "fast": "qwen/qwen-coder",
+    "cheap": "openrouter/qwen-coder",
+    "local": "ollama/qwen2.5-coder",
+    "providers": {
+      "anthropic": {
+        "apiKeyEnv": "ANTHROPIC_API_KEY"
+      },
+      "openai": {
+        "apiKeyEnv": "OPENAI_API_KEY"
+      },
+      "qwen": {
+        "apiKeyEnv": "DASHSCOPE_API_KEY"
+      },
+      "openrouter": {
+        "apiKeyEnv": "OPENROUTER_API_KEY"
+      },
+      "ollama": {
+        "baseUrl": "http://localhost:11434"
+      }
+    }
+  }
+}

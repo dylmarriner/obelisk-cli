@@ -27,6 +27,7 @@ import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
 import { DbCommand } from "./cli/cmd/db"
 import { EngineCommand } from "./cli/cmd/engine"
+import { DoctorCommand } from "./cli/cmd/doctor"
 import { errorMessage } from "./util/error"
 import { PluginCommand } from "./cli/cmd/plug"
 import { Heap } from "./cli/heap"
@@ -103,6 +104,7 @@ const cli = yargs(args)
   .command(SessionCommand)
   .command(PluginCommand)
   .command(DbCommand)
+  .command(DoctorCommand)
   .command(EngineCommand)
   .fail((msg, err) => {
     if (

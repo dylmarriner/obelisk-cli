@@ -1,0 +1,12 @@
+{
+  "name": "@obelisk-ai/self-improve",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsgo --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

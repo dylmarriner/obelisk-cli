@@ -32,6 +32,7 @@ import { BudgetCommand, PolicyCommand } from "./cli/cmd/budget"
 import { IndexCommand, SearchCommand } from "./cli/cmd/search"
 import { AstCommand } from "./cli/cmd/ast"
 import { SemanticCommand } from "./cli/cmd/semantic"
+import { OrchestrateCommand } from "./cli/cmd/orchestrate"
 import { EngineCommand } from "./cli/cmd/engine"
 import { DoctorCommand } from "./cli/cmd/doctor"
 import { ConfigCommand } from "./cli/cmd/config"
@@ -119,6 +120,7 @@ const cli = yargs(args)
   .command(SearchCommand)
   .command(AstCommand)
   .command(SemanticCommand)
+  .command(OrchestrateCommand)
   .command(ConfigCommand)
   .command(DoctorCommand)
   .command(EngineCommand)

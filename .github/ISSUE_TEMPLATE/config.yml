@@ -1,5 +1,8 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: 💬 Discord Community
-    url: https://discord.gg/obelisk
-    about: For support, troubleshooting, how-to questions, and real-time discussion.
+  - name: Obelisk CLI Documentation
+    url: https://github.com/dylmarriner/obelisk-cli/blob/main/README.md
+    about: Check the documentation before opening an issue
+  - name: Discussions
+    url: https://github.com/dylmarriner/obelisk-cli/discussions
+    about: Ask questions and discuss features with the community

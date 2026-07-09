@@ -1,9 +1,10 @@
-import { EOL } from "os"
+import * as fs from "node:fs"
 import { Effect, Console } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
-import { TokenBudgetManager, PolicyEngine, estimateTokens, DEFAULT_BUDGET_CONFIG, DEFAULT_POLICY_CONFIG } from "@obelisk-ai/obelisk-core"
+import { TokenBudgetManager, PolicyEngine, estimateTokens } from "@obelisk-ai/obelisk-core"
+import type { TokenSource } from "@obelisk-ai/obelisk-core"
 
 export const BudgetCommand = cmd({
   command: "budget",
@@ -19,7 +20,7 @@ export const BudgetCommand = cmd({
 
 const BudgetInspectCommand = effectCmd({
   command: "inspect",
-  describe: "show current token budget and usage",
+  describe: "show token budget configuration and estimate real provided context",
   instance: false,
   builder: (yargs: Argv) =>
     yargs
@@ -27,14 +28,38 @@ const BudgetInspectCommand = effectCmd({
         type: "string",
         describe: "text to estimate tokens for",
       })
+      .option("file", {
+        type: "string",
+        describe: "file to estimate tokens for",
+      })
+      .option("stdin", {
+        type: "boolean",
+        describe: "read text from stdin and estimate tokens",
+        default: false,
+      })
       .option("code", {
         type: "boolean",
-        describe: "treat text as code for more accurate estimation",
+        describe: "treat supplied text/file/stdin as code for estimation",
         default: false,
       }),
   handler: Effect.fn("Cli.budget.inspect")(function* (args) {
     const budget = new TokenBudgetManager()
     const config = budget.getConfig()
+    const sources: TokenSource[] = []
+
+    if (args.text) {
+      sources.push(toSource("text", args.text, args.code))
+    }
+
+    if (args.file) {
+      const content = fs.readFileSync(args.file, "utf-8")
+      sources.push(toSource(`file:${args.file}`, content, args.code || isCodeFile(args.file)))
+    }
+
+    if (args.stdin) {
+      const content = yield* Effect.promise(() => readStdin())
+      sources.push(toSource("stdin", content, args.code))
+    }
 
     Console.log("")
     Console.log("  Token Budget Configuration")
@@ -46,25 +71,18 @@ const BudgetInspectCommand = effectCmd({
     Console.log(`  Context policy:           ${config.contextPolicy}`)
     Console.log("")
 
-    if (args.text) {
-      const estimated = estimateTokens(args.text, args.code)
-      Console.log(`  Text: "${args.text.substring(0, 60)}..."`)
-      Console.log(`  Estimated tokens: ${estimated.toLocaleString()} (${args.code ? "code" : "text"})`)
+    if (sources.length === 0) {
+      Console.log("  No context source supplied.")
+      Console.log("  Use --text, --file, or --stdin to inspect real token usage.")
       Console.log("")
+      return
     }
 
-    const sources = [
-      { name: "System prompt", tokens: 2500, percentage: 0, isCode: false },
-      { name: "Session history", tokens: 45000, percentage: 0, isCode: false },
-      { name: "Tool results", tokens: 12000, percentage: 0, isCode: true },
-      { name: "User input", tokens: 500, percentage: 0, isCode: false },
-    ]
-
     const report = budget.inspect(sources)
-    Console.log("  Example usage breakdown:")
+    Console.log("  Context usage breakdown:")
     for (const src of report.sources) {
       const pct = ((src.tokens / config.maxInputTokens) * 100).toFixed(1)
-      Console.log(`    ${src.name.padEnd(20)} ${src.tokens.toLocaleString().padStart(8)} tok (${pct}%)`)
+      Console.log(`    ${src.name.padEnd(28)} ${src.tokens.toLocaleString().padStart(8)} tok (${pct}%)`)
     }
     Console.log("")
     Console.log(`  Total:     ${report.totalTokens.toLocaleString()}`)
@@ -78,29 +96,55 @@ const BudgetInspectCommand = effectCmd({
 
 const BudgetExplainCommand = effectCmd({
   command: "explain",
-  describe: "get a compaction suggestion for current context",
+  describe: "get a compaction suggestion for supplied context size",
   instance: false,
   builder: (yargs: Argv) =>
-    yargs.option("tokens", {
-      type: "number",
-      describe: "current context token count",
-      default: 95000,
-    }),
+    yargs
+      .option("tokens", {
+        type: "number",
+        describe: "current context token count",
+      })
+      .option("text", {
+        type: "string",
+        describe: "text to estimate and explain",
+      })
+      .option("file", {
+        type: "string",
+        describe: "file to estimate and explain",
+      })
+      .option("code", {
+        type: "boolean",
+        describe: "treat supplied text/file as code",
+        default: false,
+      }),
   handler: Effect.fn("Cli.budget.explain")(function* (args) {
     const budget = new TokenBudgetManager()
-    const sources = [
-      { name: "System prompt", tokens: 2500, percentage: 0, isCode: false },
-      { name: "Session history", tokens: args.tokens - 4500, percentage: 0, isCode: false },
-      { name: "Tool results", tokens: 1500, percentage: 0, isCode: true },
-      { name: "User input", tokens: 500, percentage: 0, isCode: false },
-    ]
+    let source: TokenSource | undefined
 
-    const report = budget.inspect(sources)
-    const suggestion = budget.getCompactionSuggestion(report)
+    if (typeof args.tokens === "number") {
+      source = { name: "provided-token-count", tokens: args.tokens, percentage: 0, isCode: false }
+    } else if (args.text) {
+      source = toSource("text", args.text, args.code)
+    } else if (args.file) {
+      const content = fs.readFileSync(args.file, "utf-8")
+      source = toSource(`file:${args.file}`, content, args.code || isCodeFile(args.file))
+    }
 
     Console.log("")
     Console.log("  Budget Analysis")
     Console.log("  " + "─".repeat(40))
+
+    if (!source) {
+      Console.log("  No context source supplied.")
+      Console.log("  Use --tokens, --text, or --file to get a compaction analysis.")
+      Console.log("")
+      return
+    }
+
+    const report = budget.inspect([source])
+    const suggestion = budget.getCompactionSuggestion(report)
+
+    Console.log(`  Source:          ${source.name}`)
     Console.log(`  Current context: ${report.totalTokens.toLocaleString()} tokens`)
     Console.log(`  Budget limit:    ${report.availableTokens.toLocaleString()} tokens`)
     Console.log(`  Status:          ${report.needsCompaction ? "⚠ Over threshold" : "✓ Within budget"}`)
@@ -239,3 +283,24 @@ const PolicyTestCommand = effectCmd({
     Console.log("")
   }),
 })
+
+function toSource(name: string, text: string, isCode = false): TokenSource {
+  return {
+    name,
+    tokens: estimateTokens(text, isCode),
+    percentage: 0,
+    isCode,
+  }
+}
+
+function isCodeFile(file: string): boolean {
+  return /\.(ts|tsx|js|jsx|rs|go|py|java|kt|swift|c|cc|cpp|h|hpp|cs|rb|php|sh|sql|json|yaml|yml|toml)$/i.test(file)
+}
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = []
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  }
+  return Buffer.concat(chunks).toString("utf-8")
+}

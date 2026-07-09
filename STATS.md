@@ -1,42 +1,18 @@
 # Download Statistics
 
-> Weekly download metrics for Obelisk CLI across GitHub and npm registries.
-> Updated automatically by the CI pipeline.
+> Download metrics for Obelisk CLI across GitHub and npm registries.
+> Data will be available after the first public release and CI pipeline setup.
 
-## Overview
+## Status
 
-| Metric | Value |
-|--------|-------|
-| **Total downloads (all time)** | 148,626+ |
-| **GitHub releases** | 57,590+ |
-| **npm installs** | 91,036+ |
-| **Peak daily growth** | +9,246 (2025-07-11) |
-| **Avg. daily growth** | ~5,300 |
+**Not yet available.** Download statistics will appear here once the project is published to npm and GitHub Releases.
 
-## Daily Breakdown
+## Planned Data Sources
 
-| Date       | GitHub Downloads     | npm Downloads        | Total                 |
-| ---------- | -------------------- | -------------------- | --------------------- |
-| 2025-06-29 | 18,789 (+0)          | 39,420 (+0)          | 58,209 (+0)           |
-| 2025-06-30 | 20,127 (+1,338)      | 41,059 (+1,639)      | 61,186 (+2,977)       |
-| 2025-07-01 | 22,108 (+1,981)      | 43,745 (+2,686)      | 65,853 (+4,667)       |
-| 2025-07-02 | 24,814 (+2,706)      | 46,168 (+2,423)      | 70,982 (+5,129)       |
-| 2025-07-03 | 27,834 (+3,020)      | 49,955 (+3,787)      | 77,789 (+6,807)       |
-| 2025-07-04 | 30,608 (+2,774)      | 54,758 (+4,803)      | 85,366 (+7,577)       |
-| 2025-07-05 | 32,524 (+1,916)      | 58,371 (+3,613)      | 90,895 (+5,529)       |
-| 2025-07-06 | 33,766 (+1,242)      | 59,694 (+1,323)      | 93,460 (+2,565)       |
-| 2025-07-08 | 38,052 (+4,286)      | 64,468 (+4,774)      | 102,520 (+9,060)      |
-| 2025-07-09 | 40,924 (+2,872)      | 67,935 (+3,467)      | 108,859 (+6,339)      |
-| 2025-07-10 | 43,796 (+2,872)      | 71,402 (+3,467)      | 115,198 (+6,339)      |
-| 2025-07-11 | 46,982 (+3,186)      | 77,462 (+6,060)      | 124,444 (+9,246)      |
-| 2025-07-12 | 49,302 (+2,320)      | 82,177 (+4,715)      | 131,479 (+7,035)      |
-| 2025-07-13 | 50,803 (+1,501)      | 86,394 (+4,217)      | 137,197 (+5,718)      |
-| 2025-07-14 | 53,283 (+2,480)      | 87,860 (+1,466)      | 141,143 (+3,946)      |
-| 2025-07-15 | 57,590 (+4,307)      | 91,036 (+3,176)      | 148,626 (+7,483)      |
-
----
+- **GitHub Releases API** — release asset download counts
+- **npm registry** — `npm install` counts
 
 ## Notes
 
-- Data is pulled from GitHub Releases API and npm registry
-- GitHub counts represent unique download events per release asset
+- Stats will be updated automatically by the CI pipeline after publication
+- Historical data will begin from the date of the first public release

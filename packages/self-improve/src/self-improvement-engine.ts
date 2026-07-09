@@ -1,17 +1,6 @@
 /**
- * SelfImprovementEngine — analyzes the codebase, identifies improvements,
- * implements them, and creates PRs for human review.
- *
- * Inspired by eval/obelisk/src/learn.rs — logs gaps, triggers improvement
- * cycles, and gates changes on build + test validation.
- *
- * Workflow:
- *   1. Scan — run linters, typecheck, find doc gaps, detect patterns
- *   2. Classify — categorize each finding (bug, lint, doc, perf, tech-debt)
- *   3. Prioritize — rank by impact + effort
- *   4. Implement — apply safe fixes automatically
- *   5. Validate — run build + test to verify
- *   6. Propose — create a branch + PR for human review
+ * SelfImprovementEngine — scans a repository, records findings, optionally
+ * applies explicit line-level fixes, validates the repository, and can open a PR.
  */
 
 import * as cp from "node:child_process";
@@ -22,8 +11,6 @@ import { LearningTracker, type Learning } from "./learning-tracker";
 
 const execFile = promisify(cp.execFile);
 const BRANCH_PREFIX = "auto-improve/";
-
-// ─── Finding Types ──────────────────────────────────────────────
 
 export type FindingSeverity = "error" | "warning" | "info" | "suggestion";
 export type FindingCategory = "lint" | "typecheck" | "docs" | "tech-debt" | "pattern" | "perf" | "test" | "deprecation";
@@ -36,7 +23,7 @@ export interface ImprovementFinding {
   description: string;
   file?: string;
   line?: number;
-  suggestion?: string;       // Suggested fix code
+  suggestion?: string;
   autoFixable: boolean;
   effort: "low" | "medium" | "high";
   impact: "low" | "medium" | "high";
@@ -60,37 +47,19 @@ export interface ImprovementResult {
   durationMs: number;
 }
 
-// ─── Engine ─────────────────────────────────────────────────────
-
 export class SelfImprovementEngine {
   private repoPath: string;
   private tracker: LearningTracker;
 
   constructor(repoPath?: string) {
-    this.repoPath = repoPath || process.cwd();
+    this.repoPath = path.resolve(repoPath || process.cwd());
     this.tracker = new LearningTracker(this.repoPath);
   }
 
-  /**
-   * Run a full improvement cycle: scan → classify → implement → validate → propose.
-   */
   async runCycle(options: { autoApply?: boolean; createPR?: boolean; branch?: string } = {}): Promise<ImprovementResult> {
     const start = Date.now();
-
-    // 1. Scan the codebase
     const plan = await this.scan();
 
-    if (plan.findings.length === 0) {
-      return {
-        plan,
-        applied: 0,
-        skipped: 0,
-        validationPassed: true,
-        durationMs: Date.now() - start,
-      };
-    }
-
-    // 2. Log learnings
     for (const finding of plan.findings) {
       await this.tracker.record({
         type: `improvement:${finding.category}`,
@@ -101,7 +70,6 @@ export class SelfImprovementEngine {
       });
     }
 
-    // 3. Apply auto-fixable improvements
     let applied = 0;
     let skipped = 0;
 
@@ -113,14 +81,11 @@ export class SelfImprovementEngine {
       }
     }
 
-    // 4. Validate
     const validationPassed = await this.validate();
-
-    // 5. Create PR if requested
     let branchName: string | undefined;
     let prUrl: string | undefined;
 
-    if (options.createPR && (applied > 0 || plan.autoFixable.length > 0) && validationPassed) {
+    if (options.createPR && applied > 0 && validationPassed) {
       const result = await this.createPR({
         branch: options.branch || `${BRANCH_PREFIX}${Date.now()}`,
         plan,
@@ -129,6 +94,14 @@ export class SelfImprovementEngine {
       branchName = result.branch;
       prUrl = result.prUrl;
     }
+
+    await this.tracker.record({
+      type: "cycle-complete",
+      content: plan.summary,
+      context: JSON.stringify({ applied, skipped, validationPassed, branchName, prUrl }),
+      tags: ["cycle", validationPassed ? "valid" : "invalid"],
+      source: "self-improve",
+    });
 
     return {
       plan,
@@ -141,65 +114,51 @@ export class SelfImprovementEngine {
     };
   }
 
-  /**
-   * Scan the codebase for improvement opportunities.
-   */
   async scan(): Promise<ImprovementPlan> {
-    const findings: ImprovementFinding[] = [];
     const timestamp = new Date().toISOString();
-
-    // Run all scanners in parallel
     const results = await Promise.allSettled([
-      this.scanLint().catch((e) => { return []; }),
-      this.scanTypecheck().catch((e) => { return []; }),
-      this.scanDocGaps().catch((e) => { return []; }),
-      this.scanDeprecations().catch((e) => { return []; }),
-      this.scanPatterns().catch((e) => { return []; }),
+      this.scanLint(),
+      this.scanTypecheck(),
+      this.scanDocGaps(),
+      this.scanDeprecations(),
+      this.scanPatterns(),
     ]);
 
-    for (const result of results) {
-      if (result.status === "fulfilled") {
-        findings.push(...result.value);
-      }
-    }
-
+    const findings = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
     const autoFixable = findings.filter((f) => f.autoFixable);
     const requiresHumanReview = findings.filter((f) => !f.autoFixable);
-
-    const summary = `Found ${findings.length} improvement(s): ` +
-      `${autoFixable.length} auto-fixable, ${requiresHumanReview.length} need review`;
+    const summary = `Found ${findings.length} improvement(s): ${autoFixable.length} auto-fixable, ${requiresHumanReview.length} need review`;
 
     return { findings, autoFixable, requiresHumanReview, summary, timestamp };
   }
 
-  /**
-   * Apply a specific fix for an auto-fixable finding.
-   */
   async applyFix(finding: ImprovementFinding): Promise<boolean> {
-    if (!finding.autoFixable || !finding.suggestion) return false;
+    if (!finding.autoFixable || !finding.suggestion || !finding.file || !finding.line) return false;
 
-    try {
-      if (finding.file && finding.line) {
-        // Apply a line-specific fix
-        // For now, we log the suggestion — actual application depends on fix type
-        await this.tracker.record({
-          type: "fix-applied",
-          content: `Applied fix for: ${finding.title}`,
-          context: `File: ${finding.file}:${finding.line}\n${finding.suggestion}`,
-          tags: ["fix", finding.category],
-          source: "self-improve",
-        });
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
+    const target = ensureInsideRepo(this.repoPath, finding.file);
+    if (!fs.existsSync(target) || !fs.statSync(target).isFile()) return false;
+
+    const original = fs.readFileSync(target, "utf-8");
+    const newline = original.includes("\r\n") ? "\r\n" : "\n";
+    const lines = original.split(/\r?\n/);
+    const lineIndex = finding.line - 1;
+
+    if (lineIndex < 0 || lineIndex >= lines.length) return false;
+
+    lines[lineIndex] = finding.suggestion;
+    fs.writeFileSync(target, lines.join(newline), "utf-8");
+
+    await this.tracker.record({
+      type: "fix-applied",
+      content: `Applied fix for: ${finding.title}`,
+      context: `File: ${finding.file}:${finding.line}`,
+      tags: ["fix", finding.category],
+      source: "self-improve",
+    });
+
+    return true;
   }
 
-  /**
-   * Validate the codebase builds and tests pass.
-   */
   async validate(): Promise<boolean> {
     const checks = [
       { name: "typecheck", cmd: "bun", args: ["run", "typecheck"] },
@@ -209,11 +168,7 @@ export class SelfImprovementEngine {
     let allPassed = true;
     for (const check of checks) {
       try {
-        await execFile(check.cmd, check.args, {
-          cwd: this.repoPath,
-          timeout: 120000,
-          stdio: "pipe",
-        });
+        await execFile(check.cmd, check.args, { cwd: this.repoPath, timeout: 120000 });
         await this.tracker.record({
           type: "validation-pass",
           content: `${check.name} passed`,
@@ -221,12 +176,12 @@ export class SelfImprovementEngine {
           tags: ["validation", check.name],
           source: "self-improve",
         });
-      } catch {
+      } catch (err) {
         allPassed = false;
         await this.tracker.record({
           type: "validation-fail",
           content: `${check.name} failed`,
-          context: "",
+          context: (err as Error).message,
           tags: ["validation", check.name],
           source: "self-improve",
         });
@@ -235,56 +190,35 @@ export class SelfImprovementEngine {
     return allPassed;
   }
 
-  /**
-   * Create a branch and PR with the improvements.
-   */
   async createPR(options: { branch: string; plan: ImprovementPlan; applied: number }): Promise<{ branch: string; prUrl?: string }> {
     const { branch, plan, applied } = options;
+    const originalBranch = (await execFile("git", ["branch", "--show-current"], { cwd: this.repoPath, timeout: 10000 })).stdout.trim();
 
     try {
-      // Create branch from current HEAD
       await execFile("git", ["checkout", "-b", branch], { cwd: this.repoPath, timeout: 10000 });
-
-      // Stage all changes
       await execFile("git", ["add", "-A"], { cwd: this.repoPath, timeout: 30000 });
 
-      // Check if there's anything to commit
       const { stdout: status } = await execFile("git", ["status", "--porcelain"], { cwd: this.repoPath, timeout: 10000 });
       if (!status.trim()) {
-        // No changes — go back to original branch
-        await execFile("git", ["checkout", "-"], { cwd: this.repoPath, timeout: 10000 });
+        await execFile("git", ["checkout", originalBranch], { cwd: this.repoPath, timeout: 10000 });
         return { branch };
       }
 
-      // Build commit message
-      const commitMsg = this.buildCommitMessage(plan, applied);
+      await execFile("git", ["commit", "-m", this.buildCommitMessage(plan, applied)], { cwd: this.repoPath, timeout: 15000 });
+      await execFile("git", ["push", "origin", branch, "--no-verify"], { cwd: this.repoPath, timeout: 60000 });
 
-      // Commit
-      await execFile("git", ["commit", "-m", commitMsg], { cwd: this.repoPath, timeout: 15000 });
-
-      // Push branch
-      await execFile("git", ["push", "origin", branch, "--no-verify"], {
-        cwd: this.repoPath,
-        timeout: 60000,
-      });
-
-      // Create PR via gh CLI
       let prUrl: string | undefined;
       try {
-        const { stdout: prOut } = await execFile("gh", [
+        const { stdout } = await execFile("gh", [
           "pr", "create",
           "--title", `auto: ${plan.summary}`,
           "--body", this.buildPRBody(plan, applied),
           "--head", branch,
         ], { cwd: this.repoPath, timeout: 30000 });
-        prUrl = prOut.trim();
-      } catch {
-        // gh CLI might not be available
-      }
+        prUrl = stdout.trim();
+      } catch {}
 
-      // Go back to original branch
-      await execFile("git", ["checkout", "-"], { cwd: this.repoPath, timeout: 10000 });
-
+      await execFile("git", ["checkout", originalBranch], { cwd: this.repoPath, timeout: 10000 });
       await this.tracker.record({
         type: "pr-created",
         content: `PR created on branch ${branch}`,
@@ -295,17 +229,13 @@ export class SelfImprovementEngine {
 
       return { branch, prUrl };
     } catch (err) {
-      // Clean up on failure — go back to original branch
       try {
-        await execFile("git", ["checkout", "-"], { cwd: this.repoPath, timeout: 10000 });
+        if (originalBranch) await execFile("git", ["checkout", originalBranch], { cwd: this.repoPath, timeout: 10000 });
       } catch {}
       throw err;
     }
   }
 
-  /**
-   * Get a summary of recent improvements and learnings.
-   */
   async getStatus(): Promise<{ recentLearnings: Learning[]; cycleCount: number; lastCycle?: string }> {
     const learnings = await this.tracker.recent(20);
     const cycles = learnings.filter((l) => l.type === "cycle-complete");
@@ -316,113 +246,32 @@ export class SelfImprovementEngine {
     };
   }
 
-  // ─── Scanners ─────────────────────────────────────────────────
-
   private async scanLint(): Promise<ImprovementFinding[]> {
-    const findings: ImprovementFinding[] = [];
-    try {
-      const { stdout } = await execFile("bun", ["run", "lint"], {
-        cwd: this.repoPath,
-        timeout: 60000,
-        stdio: "pipe",
-      });
-
-      // Parse oxlint output for warnings/errors
-      for (const line of stdout.split("\n")) {
-        const match = line.match(/^(.+?):(\d+):(\d+):\s+(warning|error)\s+(.+)/);
-        if (match) {
-          findings.push({
-            id: `lint-${findings.length}`,
-            category: "lint",
-            severity: match[4] as FindingSeverity,
-            title: match[5].trim(),
-            description: `Lint ${match[4]} in ${path.basename(match[1])}`,
-            file: match[1],
-            line: parseInt(match[2], 10),
-            autoFixable: false,
-            effort: "low",
-            impact: "low",
-          });
-        }
-      }
-    } catch {
-      // oxlint may exit non-zero when finding issues — that's expected
-    }
-    return findings;
+    const output = await runCommandCapture("bun", ["run", "lint"], this.repoPath, 60000);
+    return parseDiagnostics(output, "lint", "low", "low");
   }
 
   private async scanTypecheck(): Promise<ImprovementFinding[]> {
-    const findings: ImprovementFinding[] = [];
-    try {
-      const { stdout, stderr } = await execFile("bun", ["run", "typecheck"], {
-        cwd: this.repoPath,
-        timeout: 120000,
-        stdio: "pipe",
-      });
-
-      const output = stdout + stderr;
-      for (const line of output.split("\n")) {
-        const match = line.match(/^(.+?):(\d+):(\d+)\s+-\s+error\s+(.+)/);
-        if (match) {
-          findings.push({
-            id: `type-${findings.length}`,
-            category: "typecheck",
-            severity: "error",
-            title: match[4].trim(),
-            description: `Type error in ${path.basename(match[1])}`,
-            file: match[1],
-            line: parseInt(match[2], 10),
-            autoFixable: false,
-            effort: "medium",
-            impact: "high",
-          });
-        }
-      }
-    } catch {
-      // tsc may exit non-zero on errors
-    }
-    return findings;
+    const output = await runCommandCapture("bun", ["run", "typecheck"], this.repoPath, 120000);
+    return parseDiagnostics(output, "typecheck", "medium", "high");
   }
 
   private async scanDocGaps(): Promise<ImprovementFinding[]> {
     const findings: ImprovementFinding[] = [];
+    const docs = ["README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "LICENSE", "AGENTS.md"];
 
-    // Check for missing README, CONTRIBUTING, etc.
-    const essentialDocs = ["README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "LICENSE", "AGENTS.md"];
-    for (const doc of essentialDocs) {
+    for (const doc of docs) {
       if (!fs.existsSync(path.join(this.repoPath, doc))) {
         findings.push({
           id: `doc-${findings.length}`,
           category: "docs",
           severity: "warning",
           title: `Missing ${doc}`,
-          description: `Essential documentation file ${doc} is missing`,
+          description: `Documentation file ${doc} is missing`,
           autoFixable: false,
           effort: "low",
           impact: "medium",
         });
-      }
-    }
-
-    // Check for packages without README
-    const packagesDir = path.join(this.repoPath, "packages");
-    if (fs.existsSync(packagesDir)) {
-      for (const pkg of fs.readdirSync(packagesDir)) {
-        const pkgPath = path.join(packagesDir, pkg);
-        if (fs.statSync(pkgPath).isDirectory() && fs.existsSync(path.join(pkgPath, "package.json"))) {
-          if (!fs.existsSync(path.join(pkgPath, "README.md"))) {
-            findings.push({
-              id: `doc-pkg-${findings.length}`,
-              category: "docs",
-              severity: "info",
-              title: `Package ${pkg} missing README`,
-              description: `Package packages/${pkg} has no README.md`,
-              autoFixable: false,
-              effort: "low",
-              impact: "low",
-            });
-          }
-        }
       }
     }
 
@@ -431,72 +280,63 @@ export class SelfImprovementEngine {
 
   private async scanDeprecations(): Promise<ImprovementFinding[]> {
     const findings: ImprovementFinding[] = [];
-
-    // Check package.json for outdated dependencies
     const pkgPath = path.join(this.repoPath, "package.json");
-    if (fs.existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
-        const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
-        for (const [name, version] of Object.entries(allDeps)) {
-          if (typeof version === "string" && version.startsWith("0.")) {
-            findings.push({
-              id: `dep-${findings.length}`,
-              category: "deprecation",
-              severity: "info",
-              title: `Pre-1.0 dependency: ${name}@${version}`,
-              description: `Dependency ${name} is still pre-1.0 (${version})`,
-              autoFixable: false,
-              effort: "medium",
-              impact: "medium",
-            });
-          }
-        }
-      } catch {}
+    if (!fs.existsSync(pkgPath)) return findings;
+
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+    for (const [name, version] of Object.entries(deps)) {
+      if (typeof version === "string" && version.startsWith("0.")) {
+        findings.push({
+          id: `dep-${findings.length}`,
+          category: "deprecation",
+          severity: "info",
+          title: `Pre-1.0 dependency: ${name}@${version}`,
+          description: `Dependency ${name} is still pre-1.0 (${version})`,
+          autoFixable: false,
+          effort: "medium",
+          impact: "medium",
+        });
+      }
     }
 
     return findings;
   }
 
   private async scanPatterns(): Promise<ImprovementFinding[]> {
-    const findings: ImprovementFinding[] = [];
+    const output = await runCommandCapture("rg", [
+      "--no-heading",
+      "--line-number",
+      "(TODO|FIXME|HACK|XXX|WORKAROUND|HACKFIX)[:\\s]",
+      "--type-add",
+      "code:*.{ts,tsx,js,jsx,rs,go,py}",
+      "-t",
+      "code",
+      "--max-count",
+      "50",
+    ], this.repoPath, 15000);
 
-    // Check for TODO/FIXME/HACK comments
-    try {
-      const { stdout } = await execFile("rg", [
-        "--no-heading", "--line-number",
-        "(TODO|FIXME|HACK|XXX|WORKAROUND|HACKFIX)[:\s]",
-        "--type-add", "code:*.{ts,tsx,js,jsx,rs,go,py}",
-        "-t", "code",
-        "--max-count", "50",
-      ], { cwd: this.repoPath, timeout: 15000, stdio: "pipe" });
-
-      for (const line of stdout.split("\n").filter(Boolean).slice(0, 20)) {
-        const match = line.match(/^(.+?):(\d+):(.+)/);
-        if (match) {
-          findings.push({
-            id: `pattern-${findings.length}`,
-            category: "tech-debt",
-            severity: "info",
-            title: `Tech debt marker: ${match[3].trim().substring(0, 60)}`,
-            description: `Found in ${path.basename(match[1])}:${match[2]}`,
-            file: match[1],
-            line: parseInt(match[2], 10),
-            autoFixable: false,
-            effort: "medium",
-            impact: "low",
-          });
-        }
-      }
-    } catch {}
-
-    return findings;
+    return output.split("\n").filter(Boolean).slice(0, 50).flatMap((line, index) => {
+      const match = line.match(/^(.+?):(\d+):(.+)/);
+      if (!match) return [];
+      return [{
+        id: `pattern-${index}`,
+        category: "tech-debt" as FindingCategory,
+        severity: "info" as FindingSeverity,
+        title: `Tech debt marker: ${match[3].trim().slice(0, 80)}`,
+        description: `Found in ${path.basename(match[1])}:${match[2]}`,
+        file: match[1],
+        line: Number.parseInt(match[2], 10),
+        autoFixable: false,
+        effort: "medium" as const,
+        impact: "low" as const,
+      }];
+    });
   }
 
-  // ─── Utilities ────────────────────────────────────────────────
-
   private buildCommitMessage(plan: ImprovementPlan, applied: number): string {
-    const lines = [
+    return [
       `auto(improve): ${plan.summary.toLowerCase()}`,
       "",
       `Automated improvement cycle — ${new Date().toISOString()}`,
@@ -504,36 +344,14 @@ export class SelfImprovementEngine {
       `Findings: ${plan.findings.length}`,
       `Auto-fixed: ${applied}`,
       `Needs review: ${plan.requiresHumanReview.length}`,
-      "",
-    ];
-
-    // Group by category
-    const byCategory = new Map<FindingCategory, ImprovementFinding[]>();
-    for (const f of plan.findings) {
-      const list = byCategory.get(f.category) || [];
-      list.push(f);
-      byCategory.set(f.category, list);
-    }
-
-    for (const [cat, items] of byCategory) {
-      lines.push(`${cat}:`);
-      for (const item of items.slice(0, 5)) {
-        lines.push(`  - ${item.title} (${item.severity})`);
-      }
-      if (items.length > 5) {
-        lines.push(`  ️  ... and ${items.length - 5} more`);
-      }
-      lines.push("");
-    }
-
-    return lines.join("\n");
+    ].join("\n");
   }
 
   private buildPRBody(plan: ImprovementPlan, applied: number): string {
     return [
-      "## 🤖 Automated Improvement PR",
+      "## Automated Improvement PR",
       "",
-      `This PR was auto-generated by the Obelisk self-improvement engine.`,
+      "This PR was generated by the Obelisk self-improvement engine.",
       "",
       "### Summary",
       "",
@@ -543,27 +361,54 @@ export class SelfImprovementEngine {
       `| Auto-fixed | ${applied} |`,
       `| Needs review | ${plan.requiresHumanReview.length} |`,
       "",
-      "### Changes by Category",
-      "",
-      ...Array.from(
-        new Map(
-          plan.findings.map((f) => [f.category, f] as const)
-        ).keys()
-      ).map((cat) => {
-        const count = plan.findings.filter((f) => f.category === cat).length;
-        return `- **${cat}**: ${count} finding(s)`;
-      }),
-      "",
       "### Review Required",
       "",
-      "The following items need human review before merging:",
-      "",
-      ...plan.requiresHumanReview.slice(0, 10).map(
-        (f) => `- [ ] ${f.severity}: ${f.title}${f.file ? ` (${f.file}:${f.line})` : ""}`
-      ),
-      "",
-      "---",
-      "_Generated by Obelisk self-improve engine_",
+      ...plan.requiresHumanReview.slice(0, 20).map((f) => `- [ ] ${f.severity}: ${f.title}${f.file ? ` (${f.file}:${f.line})` : ""}`),
     ].join("\n");
   }
+}
+
+async function runCommandCapture(cmd: string, args: string[], cwd: string, timeout: number): Promise<string> {
+  try {
+    const { stdout, stderr } = await execFile(cmd, args, { cwd, timeout });
+    return `${stdout}\n${stderr}`;
+  } catch (err) {
+    const anyErr = err as { stdout?: string; stderr?: string; message?: string };
+    return `${anyErr.stdout || ""}\n${anyErr.stderr || ""}\n${anyErr.message || ""}`;
+  }
+}
+
+function parseDiagnostics(
+  output: string,
+  category: "lint" | "typecheck",
+  effort: ImprovementFinding["effort"],
+  impact: ImprovementFinding["impact"],
+): ImprovementFinding[] {
+  const findings: ImprovementFinding[] = [];
+  for (const line of output.split("\n")) {
+    const match = line.match(/^(.+?):(\d+):(\d+):?\s*(warning|error)?\s*(.+)$/i);
+    if (!match) continue;
+    findings.push({
+      id: `${category}-${findings.length}`,
+      category,
+      severity: (match[4]?.toLowerCase() === "warning" ? "warning" : "error") as FindingSeverity,
+      title: match[5].trim(),
+      description: `${category} finding in ${path.basename(match[1])}`,
+      file: match[1],
+      line: Number.parseInt(match[2], 10),
+      autoFixable: false,
+      effort,
+      impact,
+    });
+  }
+  return findings;
+}
+
+function ensureInsideRepo(repoPath: string, relativePath: string): string {
+  const fullPath = path.resolve(repoPath, relativePath);
+  const normalizedRepo = repoPath.endsWith(path.sep) ? repoPath : repoPath + path.sep;
+  if (fullPath !== repoPath && !fullPath.startsWith(normalizedRepo)) {
+    throw new Error(`Refusing to modify outside repository: ${relativePath}`);
+  }
+  return fullPath;
 }

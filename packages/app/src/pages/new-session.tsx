@@ -2,7 +2,7 @@ import { Show, createEffect, createMemo, createResource, untrack } from "solid-j
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { useSearchParams } from "@solidjs/router"
-import { Tooltip } from "@opencode-ai/ui/tooltip"
+import { Tooltip } from "@obelisk-ai/ui/tooltip"
 import { NewSessionDesignView } from "@/components/session"
 import { PromptInput } from "@/components/prompt-input"
 import { StatusPopoverV2 } from "@/components/status-popover"
@@ -25,7 +25,7 @@ import { NEW_SESSION_CONTENT_WIDTH } from "@/pages/session/new-session-layout"
 import { PromptWorkspaceSelector } from "@/components/prompt-workspace-selector"
 import { useTitlebarRightMount } from "@/components/titlebar"
 
-const workspaceBarEnabled = import.meta.env.VITE_OPENCODE_CHANNEL !== "prod"
+const workspaceBarEnabled = import.meta.env.VITE_OBELISK_CHANNEL !== "prod"
 
 /**
  * The `/new-session` draft page. Unlike `session.tsx`, this only renders the prompt

@@ -1,8 +1,8 @@
 import { addons, types } from "storybook/manager-api"
 import { ThemeTool } from "./theme-tool"
 
-addons.register("opencode/theme-toggle", () => {
-  addons.add("opencode/theme-toggle/tool", {
+addons.register("obelisk/theme-toggle", () => {
+  addons.add("obelisk/theme-toggle/tool", {
     type: types.TOOL,
     title: "Theme",
     match: ({ viewMode }) => viewMode === "story" || viewMode === "docs",

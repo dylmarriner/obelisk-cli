@@ -1,17 +1,17 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "version": "1.17.15",
-  "name": "@opencode-ai/http-recorder",
+  "name": "@obelisk-ai/http-recorder",
   "description": "Record and replay Effect HTTP client traffic with deterministic cassettes",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anomalyco/opencode.git",
+    "url": "git+https://github.com/anomalyco/obelisk.git",
     "directory": "packages/http-recorder"
   },
-  "homepage": "https://github.com/anomalyco/opencode/tree/dev/packages/http-recorder",
-  "bugs": "https://github.com/anomalyco/opencode/issues",
+  "homepage": "https://github.com/anomalyco/obelisk/tree/dev/packages/http-recorder",
+  "bugs": "https://github.com/anomalyco/obelisk/issues",
   "keywords": [
     "effect",
     "http",

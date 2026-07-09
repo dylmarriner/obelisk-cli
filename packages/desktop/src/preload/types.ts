@@ -1,6 +1,6 @@
-import type { DesktopMenuAction } from "@opencode-ai/app/desktop-menu"
-import type { WslServersPlatform } from "@opencode-ai/app/wsl/types"
-import type { UpdaterState } from "@opencode-ai/app/updater"
+import type { DesktopMenuAction } from "@obelisk-ai/app/desktop-menu"
+import type { WslServersPlatform } from "@obelisk-ai/app/wsl/types"
+import type { UpdaterState } from "@obelisk-ai/app/updater"
 export type {
   WslDistroProbe,
   WslInstalledDistro,
@@ -13,7 +13,7 @@ export type {
   WslServerRuntime,
   WslServersEvent,
   WslServersState,
-} from "@opencode-ai/app/wsl/types"
+} from "@obelisk-ai/app/wsl/types"
 
 export type ServerReadyData = {
   url: string

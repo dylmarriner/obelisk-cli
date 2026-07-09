@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test"
-import { mockOpenCodeServer } from "../utils/mock-server"
+import { mockObeliskServer } from "../utils/mock-server"
 import { expectSessionTitle } from "../utils/waits"
 
-const directory = "C:/OpenCode/ReviewTerminalStacked"
+const directory = "C:/Obelisk/ReviewTerminalStacked"
 const projectID = "proj_review_terminal_stacked"
 const sessionID = "ses_review_terminal_stacked"
 const title = "Review terminal stacked"
@@ -16,7 +16,7 @@ const branchDiffs = [
 test("keeps the review tree and terminal sized when both panels are open", async ({ page }) => {
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 1400, height: 900 })
-  await mockOpenCodeServer(page, {
+  await mockObeliskServer(page, {
     directory,
     project: {
       id: projectID,
@@ -29,13 +29,13 @@ test("keeps the review tree and terminal sized when both panels are open", async
     provider: {
       all: [
         {
-          id: "opencode",
-          name: "OpenCode",
+          id: "obelisk",
+          name: "Obelisk",
           models: { test: { id: "test", name: "Test", limit: { context: 200_000 } } },
         },
       ],
-      connected: ["opencode"],
-      default: { providerID: "opencode", modelID: "test" },
+      connected: ["obelisk"],
+      default: { providerID: "obelisk", modelID: "test" },
     },
     sessions: [
       {
@@ -82,7 +82,7 @@ test("keeps the review tree and terminal sized when both panels are open", async
   await page.addInitScript(() => {
     localStorage.setItem("settings.v3", JSON.stringify({ general: { newLayoutDesigns: true } }))
     localStorage.setItem(
-      "opencode.global.dat:layout",
+      "obelisk.global.dat:layout",
       JSON.stringify({ review: { diffStyle: "split", panelOpened: true } }),
     )
   })

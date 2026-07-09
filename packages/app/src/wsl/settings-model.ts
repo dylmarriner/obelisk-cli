@@ -24,7 +24,7 @@ export type AddServerPrimaryButton = {
   variant: "neutral" | "contrast"
   label: AddServerText
   disabled: boolean
-  action: "install-opencode" | "add" | null
+  action: "install-obelisk" | "add" | null
   loading: boolean
   width: string | null
 }
@@ -53,8 +53,8 @@ export const wslRuntimeRetryable = (runtime: WslServerRuntime) =>
 
 export function wslOpencodeAction(check?: WslOpencodeCheck) {
   if (!check) return
-  if (!check.resolvedPath) return "Install OpenCode"
-  if (check.matchesDesktop === false) return "Update OpenCode"
+  if (!check.resolvedPath) return "Install Obelisk"
+  if (check.matchesDesktop === false) return "Update Obelisk"
 }
 
 export function wslDistroReady(state: WslServersState | undefined, name: string) {
@@ -80,7 +80,7 @@ export function addServerViewModel(input: {
   const existingServerDistros = new Set((state?.servers ?? []).map((item) => item.config.distro))
   const addableInstalledDistros = visibleInstalledDistros.filter((item) => !existingServerDistros.has(item.name))
   const selectedDistro = addServerSelectedDistro(input.selectedDistro, visibleInstalledDistros, addableInstalledDistros)
-  const opencodeCheck = selectedDistro ? (state?.opencodeChecks[selectedDistro] ?? null) : null
+  const obeliskCheck = selectedDistro ? (state?.obeliskChecks[selectedDistro] ?? null) : null
   const installableDistros = addServerInstallableDistros(visibleInstalledDistros, visibleOnlineDistros)
   const filteredInstallableDistros = addServerFilteredInstallableDistros(installableDistros, input.catalogSearch)
   const catalogTarget = addServerCatalogTarget(input.catalogTarget, filteredInstallableDistros)
@@ -93,7 +93,7 @@ export function addServerViewModel(input: {
     visibleOnlineDistros,
     addableInstalledDistros,
     selectedDistro,
-    opencodeCheck,
+    obeliskCheck,
     wslReady: !!state?.runtime?.available && !state?.pendingRestart,
     distroStatuses: Object.fromEntries(
       addableInstalledDistros.flatMap((item) => {
@@ -105,7 +105,7 @@ export function addServerViewModel(input: {
     primaryButton: addServerPrimaryButton({
       state,
       selectedDistro,
-      opencodeCheck,
+      obeliskCheck,
       adding: input.adding,
       probingAddable: input.probingAddable,
     }),
@@ -165,7 +165,7 @@ function addServerDistroStatus(input: {
   if (!probe.hasBash || !probe.hasCurl) {
     return { label: { key: "wsl.onboarding.distroStatus.missingTools" }, tone: "warning" }
   }
-  const check = input.state?.opencodeChecks[input.name]
+  const check = input.state?.obeliskChecks[input.name]
   if (!check) {
     if (input.probingAddable || (job?.kind === "probe-addable" && job.distros.includes(input.name))) {
       return checkingStatus()
@@ -173,7 +173,7 @@ function addServerDistroStatus(input: {
     return
   }
   if (check.matchesDesktop === false) return { label: { key: "wsl.onboarding.updateOpencode" }, tone: "warning" }
-  if (!check.resolvedPath) return { label: { key: "wsl.onboarding.distroStatus.opencodeMissing" }, tone: "warning" }
+  if (!check.resolvedPath) return { label: { key: "wsl.onboarding.distroStatus.obeliskMissing" }, tone: "warning" }
   if (check.error) return { label: { key: "wsl.onboarding.installOpencode" }, tone: "warning" }
   return { label: { key: "wsl.onboarding.distroStatus.ready" }, tone: "success" }
 }
@@ -185,7 +185,7 @@ function checkingStatus(): DistroStatus {
 function addServerPrimaryButton(input: {
   state: WslServersState | undefined
   selectedDistro: string | null
-  opencodeCheck: WslOpencodeCheck | null
+  obeliskCheck: WslOpencodeCheck | null
   adding: boolean
   probingAddable: boolean
 }): AddServerPrimaryButton {
@@ -194,12 +194,12 @@ function addServerPrimaryButton(input: {
   const probingOpencode =
     probingSelected ||
     (ready &&
-      (!input.opencodeCheck ||
+      (!input.obeliskCheck ||
         (!!input.selectedDistro &&
           input.state?.job?.kind === "probe-addable" &&
           input.state.job.distros.includes(input.selectedDistro))))
   const installingOpencode =
-    input.state?.job?.kind === "install-opencode" && input.state.job.distro === input.selectedDistro
+    input.state?.job?.kind === "install-obelisk" && input.state.job.distro === input.selectedDistro
   if (!ready || probingOpencode) {
     return {
       variant: "contrast",
@@ -210,8 +210,8 @@ function addServerPrimaryButton(input: {
       width: null,
     }
   }
-  if (!addServerOpencodeReady(input.opencodeCheck)) {
-    const update = !!input.opencodeCheck?.resolvedPath && input.opencodeCheck.matchesDesktop === false
+  if (!addServerOpencodeReady(input.obeliskCheck)) {
+    const update = !!input.obeliskCheck?.resolvedPath && input.obeliskCheck.matchesDesktop === false
     return {
       variant: "neutral",
       label: installingOpencode
@@ -220,7 +220,7 @@ function addServerPrimaryButton(input: {
           ? { key: "wsl.onboarding.updateOpencode" }
           : { key: "wsl.onboarding.installOpencode" },
       disabled: !!input.state?.job || input.adding,
-      action: "install-opencode",
+      action: "install-obelisk",
       loading: installingOpencode,
       width: update ? "138px" : "129px",
     }
@@ -245,7 +245,7 @@ function addServerSelectedDistroSettled(state: WslServersState | undefined, sele
   if (installed?.version === 1) return false
   if (!state?.distroProbes[selectedDistro]) return false
   if (!wslDistroReady(state, selectedDistro)) return true
-  return !!state.opencodeChecks[selectedDistro]
+  return !!state.obeliskChecks[selectedDistro]
 }
 
 function addServerInstallableDistros(installedDistros: WslInstalledDistro[], onlineDistros: WslOnlineDistro[]) {
@@ -286,7 +286,7 @@ export function addableProbePlan(input: {
   const pending = ordered.flatMap((item) => {
     if (item.version === 1) return []
     if (!state.distroProbes[item.name]) return [`distro:${item.name}`]
-    if (wslDistroReady(state, item.name) && !state.opencodeChecks[item.name]) return [`opencode:${item.name}`]
+    if (wslDistroReady(state, item.name) && !state.obeliskChecks[item.name]) return [`obelisk:${item.name}`]
     return []
   })
   if (!pending.length) return

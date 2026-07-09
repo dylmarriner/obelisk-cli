@@ -1,9 +1,9 @@
-import { base64Encode } from "@opencode-ai/core/util/encode"
+import { base64Encode } from "@obelisk-ai/core/util/encode"
 import { expect, test, type Page } from "@playwright/test"
-import { mockOpenCodeServer } from "../utils/mock-server"
+import { mockObeliskServer } from "../utils/mock-server"
 import { expectSessionTitle } from "../utils/waits"
 
-const directory = "C:/OpenCode/RequestDocks"
+const directory = "C:/Obelisk/RequestDocks"
 const projectID = "proj_request_docks"
 const sessionID = "ses_request_docks"
 const title = "Request dock regression"
@@ -107,7 +107,7 @@ async function mockServer(
     questions?: unknown[] | (() => unknown[])
   },
 ) {
-  await mockOpenCodeServer(page, {
+  await mockObeliskServer(page, {
     directory,
     project: {
       id: projectID,
@@ -120,8 +120,8 @@ async function mockServer(
     provider: {
       all: [
         {
-          id: "opencode",
-          name: "OpenCode",
+          id: "obelisk",
+          name: "Obelisk",
           models: {
             "claude-opus-4-6": {
               id: "claude-opus-4-6",
@@ -131,8 +131,8 @@ async function mockServer(
           },
         },
       ],
-      connected: ["opencode"],
-      default: { providerID: "opencode", modelID: "claude-opus-4-6" },
+      connected: ["obelisk"],
+      default: { providerID: "obelisk", modelID: "claude-opus-4-6" },
     },
     sessions: [
       {

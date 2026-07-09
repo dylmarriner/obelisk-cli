@@ -1,3 +1,14 @@
+diff --git a/dist/render/FileTreeView.js b/dist/render/FileTreeView.js b/dist/render/FileTreeView.js
+index 6db15e51b833192f79b71a15febe1612a4c185d0..36a4e6ac527595849c1db0e6bbebb475b6030b7b 100644
+--- a/dist/render/FileTreeView.js
++++ b/dist/render/FileTreeView.js
+@@ -12,5 +12,5 @@
+ import { computeFileTreeRowElementAttributes } from "./rowAttributes.js";
+ import { computeFileTreeRowClickPlan } from "./rowClickPlan.js";
+ import { Fragment } from "preact";
+-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
++import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/compat";
+ import { jsx, jsxs } from "preact/jsx-runtime";
 diff --git a/dist/model/FileTreeController.js b/dist/model/FileTreeController.js
 index 37c5d1ffedd5aff0258dec41b1b5cedb240aa3a6..365c42ef4c824bfd13d14f0d09226929af625c73 100644
 --- a/dist/model/FileTreeController.js

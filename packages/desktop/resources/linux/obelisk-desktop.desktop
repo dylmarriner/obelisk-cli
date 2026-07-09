@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Obelisk
+Exec=/opt/Obelisk/ai.obelisk.desktop %U
+Terminal=false
+Type=Application
+Icon=ai.obelisk.desktop
+StartupWMClass=ai.obelisk.desktop
+NoDisplay=true
+Comment=Open source AI coding agent
+Categories=Development;

@@ -1,13 +1,13 @@
 import "@/index.css"
 import * as Sentry from "@sentry/solid"
-import { I18nProvider } from "@opencode-ai/ui/context"
-import { DialogProvider } from "@opencode-ai/ui/context/dialog"
-import { FileComponentProvider } from "@opencode-ai/ui/context/file"
-import { MarkedProvider } from "@opencode-ai/ui/context/marked"
-import { File } from "@opencode-ai/session-ui/file"
-import { Font } from "@opencode-ai/ui/font"
-import { Splash } from "@opencode-ai/ui/logo"
-import { ThemeProvider } from "@opencode-ai/ui/theme/context"
+import { I18nProvider } from "@obelisk-ai/ui/context"
+import { DialogProvider } from "@obelisk-ai/ui/context/dialog"
+import { FileComponentProvider } from "@obelisk-ai/ui/context/file"
+import { MarkedProvider } from "@obelisk-ai/ui/context/marked"
+import { File } from "@obelisk-ai/session-ui/file"
+import { Font } from "@obelisk-ai/ui/font"
+import { Splash } from "@obelisk-ai/ui/logo"
+import { ThemeProvider } from "@obelisk-ai/ui/theme/context"
 import { MetaProvider } from "@solidjs/meta"
 import { type BaseRouterProps, Navigate, Route, Router, useNavigate, useParams, useSearchParams } from "@solidjs/router"
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
@@ -220,7 +220,7 @@ function UiI18nBridge(props: ParentProps) {
 
 declare global {
   interface Window {
-    __OPENCODE__?: {
+    __OBELISK__?: {
       deepLinks?: string[]
     }
     api?: {

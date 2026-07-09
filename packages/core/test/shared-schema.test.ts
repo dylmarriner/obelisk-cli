@@ -1,35 +1,35 @@
 import { expect, test } from "bun:test"
 import { Schema } from "effect"
-import { AgentV2 } from "@opencode-ai/core/agent"
-import { ModelV2 } from "@opencode-ai/core/model"
-import { SessionV2 } from "@opencode-ai/core/session"
-import { Agent } from "@opencode-ai/schema/agent"
-import { Location } from "@opencode-ai/schema/location"
-import { Model } from "@opencode-ai/schema/model"
-import { AgentAttachment, FileAttachment, Prompt, Source } from "@opencode-ai/schema/prompt"
-import { Provider } from "@opencode-ai/schema/provider"
-import { Project } from "@opencode-ai/schema/project"
-import { ProjectDirectories } from "@opencode-ai/schema/project-directories"
-import { PermissionV1 } from "@opencode-ai/schema/permission-v1"
-import { Session } from "@opencode-ai/schema/session"
-import { SessionInput } from "@opencode-ai/schema/session-input"
-import { SessionMessage } from "@opencode-ai/schema/session-message"
-import { Workspace } from "@opencode-ai/schema/workspace"
-import { Command } from "@opencode-ai/schema/command"
-import { Connection } from "@opencode-ai/schema/connection"
-import { Credential } from "@opencode-ai/schema/credential"
-import { FileSystem } from "@opencode-ai/schema/filesystem"
-import { Integration } from "@opencode-ai/schema/integration"
-import { LLM } from "@opencode-ai/schema/llm"
-import { Permission } from "@opencode-ai/schema/permission"
-import { Plugin } from "@opencode-ai/schema/plugin"
-import { Pty } from "@opencode-ai/schema/pty"
-import { Reference } from "@opencode-ai/schema/reference"
-import { SessionTodo } from "@opencode-ai/schema/session-todo"
-import { Skill } from "@opencode-ai/schema/skill"
-import { AbsolutePath, DateTimeUtcFromMillis, optional, statics } from "@opencode-ai/schema/schema"
-import { ProviderV2 } from "@opencode-ai/core/provider"
-import { PluginV2 } from "@opencode-ai/core/plugin"
+import { AgentV2 } from "@obelisk-ai/core/agent"
+import { ModelV2 } from "@obelisk-ai/core/model"
+import { SessionV2 } from "@obelisk-ai/core/session"
+import { Agent } from "@obelisk-ai/schema/agent"
+import { Location } from "@obelisk-ai/schema/location"
+import { Model } from "@obelisk-ai/schema/model"
+import { AgentAttachment, FileAttachment, Prompt, Source } from "@obelisk-ai/schema/prompt"
+import { Provider } from "@obelisk-ai/schema/provider"
+import { Project } from "@obelisk-ai/schema/project"
+import { ProjectDirectories } from "@obelisk-ai/schema/project-directories"
+import { PermissionV1 } from "@obelisk-ai/schema/permission-v1"
+import { Session } from "@obelisk-ai/schema/session"
+import { SessionInput } from "@obelisk-ai/schema/session-input"
+import { SessionMessage } from "@obelisk-ai/schema/session-message"
+import { Workspace } from "@obelisk-ai/schema/workspace"
+import { Command } from "@obelisk-ai/schema/command"
+import { Connection } from "@obelisk-ai/schema/connection"
+import { Credential } from "@obelisk-ai/schema/credential"
+import { FileSystem } from "@obelisk-ai/schema/filesystem"
+import { Integration } from "@obelisk-ai/schema/integration"
+import { LLM } from "@obelisk-ai/schema/llm"
+import { Permission } from "@obelisk-ai/schema/permission"
+import { Plugin } from "@obelisk-ai/schema/plugin"
+import { Pty } from "@obelisk-ai/schema/pty"
+import { Reference } from "@obelisk-ai/schema/reference"
+import { SessionTodo } from "@obelisk-ai/schema/session-todo"
+import { Skill } from "@obelisk-ai/schema/skill"
+import { AbsolutePath, DateTimeUtcFromMillis, optional, statics } from "@obelisk-ai/schema/schema"
+import { ProviderV2 } from "@obelisk-ai/core/provider"
+import { PluginV2 } from "@obelisk-ai/core/plugin"
 
 test("Core reuses the canonical shared schemas", async () => {
   const [
@@ -55,27 +55,27 @@ test("Core reuses the canonical shared schemas", async () => {
     coreSchema,
     coreWorkspace,
   ] = await Promise.all([
-    import("@opencode-ai/core/command"),
-    import("@opencode-ai/core/integration/connection"),
-    import("@opencode-ai/core/credential"),
-    import("@opencode-ai/core/filesystem"),
-    import("@opencode-ai/core/integration"),
-    import("@opencode-ai/core/location"),
-    import("@opencode-ai/llm"),
-    import("@opencode-ai/core/permission"),
-    import("@opencode-ai/core/v1/permission"),
-    import("@opencode-ai/core/project/copy"),
-    import("@opencode-ai/core/pty"),
-    import("@opencode-ai/core/project/schema"),
-    import("@opencode-ai/core/reference"),
-    import("@opencode-ai/core/session/input"),
-    import("@opencode-ai/core/session/message"),
-    import("@opencode-ai/core/session/todo"),
-    import("@opencode-ai/core/session/prompt"),
-    import("@opencode-ai/core/skill"),
-    import("@opencode-ai/core/v2-schema"),
-    import("@opencode-ai/core/schema"),
-    import("@opencode-ai/core/workspace"),
+    import("@obelisk-ai/core/command"),
+    import("@obelisk-ai/core/integration/connection"),
+    import("@obelisk-ai/core/credential"),
+    import("@obelisk-ai/core/filesystem"),
+    import("@obelisk-ai/core/integration"),
+    import("@obelisk-ai/core/location"),
+    import("@obelisk-ai/llm"),
+    import("@obelisk-ai/core/permission"),
+    import("@obelisk-ai/core/v1/permission"),
+    import("@obelisk-ai/core/project/copy"),
+    import("@obelisk-ai/core/pty"),
+    import("@obelisk-ai/core/project/schema"),
+    import("@obelisk-ai/core/reference"),
+    import("@obelisk-ai/core/session/input"),
+    import("@obelisk-ai/core/session/message"),
+    import("@obelisk-ai/core/session/todo"),
+    import("@obelisk-ai/core/session/prompt"),
+    import("@obelisk-ai/core/skill"),
+    import("@obelisk-ai/core/v2-schema"),
+    import("@obelisk-ai/core/schema"),
+    import("@obelisk-ai/core/workspace"),
   ])
 
   const schemas = [

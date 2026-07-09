@@ -1,9 +1,9 @@
-import { base64Encode } from "@opencode-ai/core/util/encode"
+import { base64Encode } from "@obelisk-ai/core/util/encode"
 import { expect, test } from "@playwright/test"
-import { mockOpenCodeServer } from "../utils/mock-server"
+import { mockObeliskServer } from "../utils/mock-server"
 import { expectSessionTitle } from "../utils/waits"
 
-const directory = "C:/OpenCode/TerminalComposerFocus"
+const directory = "C:/Obelisk/TerminalComposerFocus"
 const projectID = "proj_terminal_composer_focus"
 const sessionID = "ses_terminal_composer_focus"
 const ptyID = "pty_terminal_composer_focus"
@@ -11,7 +11,7 @@ const ptyID = "pty_terminal_composer_focus"
 test.use({ viewport: { width: 1440, height: 900 } })
 
 test("routes typing to the composer unless the open terminal is focused", async ({ page }) => {
-  await mockOpenCodeServer(page, {
+  await mockObeliskServer(page, {
     directory,
     project: {
       id: projectID,
@@ -24,13 +24,13 @@ test("routes typing to the composer unless the open terminal is focused", async 
     provider: {
       all: [
         {
-          id: "opencode",
-          name: "OpenCode",
+          id: "obelisk",
+          name: "Obelisk",
           models: { test: { id: "test", name: "Test", limit: { context: 200_000 } } },
         },
       ],
-      connected: ["opencode"],
-      default: { providerID: "opencode", modelID: "test" },
+      connected: ["obelisk"],
+      default: { providerID: "obelisk", modelID: "test" },
     },
     sessions: [
       {

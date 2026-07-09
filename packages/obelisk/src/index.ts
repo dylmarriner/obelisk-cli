@@ -35,6 +35,7 @@ import { SemanticCommand } from "./cli/cmd/semantic"
 import { OrchestrateCommand } from "./cli/cmd/orchestrate"
 import { WorktreeCommand, TaskCommand } from "./cli/cmd/workflows"
 import { SelfImproveCommand } from "./cli/cmd/self-improve"
+import { OptimizeCommand } from "./cli/cmd/optimize"
 import { EngineCommand } from "./cli/cmd/engine"
 import { DoctorCommand } from "./cli/cmd/doctor"
 import { ConfigCommand } from "./cli/cmd/config"
@@ -126,6 +127,7 @@ const cli = yargs(args)
   .command(WorktreeCommand)
   .command(TaskCommand)
   .command(SelfImproveCommand)
+  .command(OptimizeCommand)
   .command(ConfigCommand)
   .command(DoctorCommand)
   .command(EngineCommand)

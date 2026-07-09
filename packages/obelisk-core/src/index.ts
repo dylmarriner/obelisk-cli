@@ -9,3 +9,11 @@ export type { ContextSource, PromptAssemblyInput, PromptAssemblyResult } from ".
 
 export { SecretRedactor } from "./secret-redactor";
 export type { SecretPattern, RedactResult, SecretFinding } from "./secret-redactor";
+
+export { InputOptimizer, DEFAULT_OPTIMIZER_OPTIONS } from "./input-optimizer";
+export type { OptimizerOptions, OptimizerReport } from "./input-optimizer";
+
+export { OutputOptimizer, DEFAULT_OUTPUT_OPTIONS } from "./output-optimizer";
+export type { OutputOptimizerOptions, OutputOptimizerReport } from "./output-optimizer";
+
+export { ReversibleBlobStore } from "./reversible-blob-store";

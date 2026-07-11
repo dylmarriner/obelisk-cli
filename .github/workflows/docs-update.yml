@@ -10,7 +10,10 @@ env:
 
 jobs:
   update-docs:
-    if: github.repository == 'dylmarriner/obelisk-cli'
+    # Disabled on this fork: routes through sst's hosted obelisk/<model> gateway
+    # (OBELISK_API_KEY), which this fork has no access to. Re-enable once wired
+    # to a provider this repo can authenticate to.
+    if: false
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       id-token: write

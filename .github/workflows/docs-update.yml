@@ -10,7 +10,7 @@ env:
 
 jobs:
   update-docs:
-    if: github.repository == 'sst/obelisk'
+    if: github.repository == 'dylmarriner/obelisk-cli'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       id-token: write

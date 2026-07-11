@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dylmarriner/obelisk-cli/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <a href="https://github.com/dylmarriner/obelisk-cli/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/dylmarriner/obelisk-cli/test.yml?branch=main&label=CI" alt="CI Status"></a>
+  <a href="https://github.com/dylmarriner/obelisk-cli/blob/dev/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <a href="https://github.com/dylmarriner/obelisk-cli/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/dylmarriner/obelisk-cli/test.yml?branch=dev&label=CI" alt="CI Status"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node >=22"></a>
   <a href="https://bun.sh"><img src="https://img.shields.io/badge/bun-1.3%2B-black" alt="Bun 1.3+"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/typescript-5.7%2B-blue" alt="TypeScript 5.7+"></a>
@@ -145,12 +145,12 @@ For detailed architecture, see [docs/blueprint.md](./docs/blueprint.md).
 | Component | Role | Integration |
 |-----------|------|-------------|
 | [OpenCode](https://github.com/anomalyco/opencode) | Agent shell, TUI, session runtime | Fork base |
-| [Nexus](#) | Durable memory server | Remote HTTP over Tailscale |
-| [Obelisk Core](./eval/obelisk/) | Token budget, policy, prompt assembly | Native TypeScript package |
-| [Serena](https://github.com/oraios/serena) | Semantic code intelligence | MCP server |
-| [Zoekt](https://github.com/sourcegraph/zoekt) | Fast code search | Subprocess |
-| [ast-grep](https://github.com/ast-grep/ast-grep) | Structural search/refactor | Subprocess |
-| [CocoIndex](https://github.com/cocoindex-io/cocoindex) | Incremental AI indexing | Optional plugin (future) |
+| [Nexus](./packages/memory/src/remote-nexus-memory-adapter.ts) | Durable memory server | Remote HTTP over Tailscale |
+| [Obelisk Core](./packages/obelisk-core/) | Token budget, policy, prompt assembly | Native TypeScript package |
+| [Serena](https://github.com/oraios/serena) | Semantic code intelligence | MCP server ([adapter](./packages/semantic/)) |
+| [Zoekt](https://github.com/sourcegraph/zoekt) | Fast code search | Subprocess ([adapter](./packages/search/)) |
+| [ast-grep](https://github.com/ast-grep/ast-grep) | Structural search/refactor | Subprocess ([adapter](./packages/structural/)) |
+| [CocoIndex](https://github.com/cocoindex-io/cocoindex) | Incremental AI indexing | Optional plugin ([adapter](./packages/search/src/cocoindex-adapter.ts)) |
 
 ---
 
@@ -161,8 +161,15 @@ For detailed architecture, see [docs/blueprint.md](./docs/blueprint.md).
 | [docs/blueprint.md](./docs/blueprint.md) | Technical architecture, adapter contracts, CLI commands |
 | [docs/roadmap.md](./docs/roadmap.md) | Implementation phases, engineering tickets, MVP definition |
 | [docs/fork-decision.md](./docs/fork-decision.md) | Fork candidate evaluation and decision matrix |
+| [docs/adapter-contracts.md](./docs/adapter-contracts.md) | Interfaces for search, semantic, structural, and memory adapters |
+| [docs/phase-0-evaluation.md](./docs/phase-0-evaluation.md) | Phase 0 tooling evaluation and vendor selection |
+| [docs/development.md](./docs/development.md) | Local dev setup, monorepo layout, workflows |
+| [docs/ci-cd.md](./docs/ci-cd.md) | CI/CD pipeline reference |
+| [docs/release.md](./docs/release.md) | Release process and versioning |
 | [CONTEXT.md](./CONTEXT.md) | Domain language and session runtime specification |
 | [SECURITY.md](./SECURITY.md) | Security policy and vulnerability reporting |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guidelines and PR standards |
+| [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Community standards |
 
 ### Translated READMEs
 
@@ -195,22 +202,33 @@ For detailed architecture, see [docs/blueprint.md](./docs/blueprint.md).
 
 ```
 obelisk-cli/
-  apps/
-    cli/                  # Main CLI binary
-    desktop/              # Desktop application
-    mcp-server/           # MCP server
   packages/
-    core/                 # Agent runtime, orchestrator, tool router
-    obelisk-core/         # Token budget, policy, prompt assembly
-    adapters/             # Memory, search, semantic, structural adapters
-    plugins/              # Plugin system
-    security/             # Tailnet access, permissions, API key management
-    shared/               # Types, config, logging, utilities
-  docs/                   # Architecture and design documentation
-  specs/                  # API specifications and design docs
-  eval/                   # Evaluated component repositories
-  scripts/                # Build and utility scripts
+    obelisk/               # CLI entrypoint (bin), commands, session runtime
+    core/                  # Agent runtime, tool registry, permissions, config
+    obelisk-core/          # Token budget, policy engine, prompt assembly
+    orchestrator/          # Tool routing across adapters
+    search/                # Zoekt + CocoIndex code search adapters
+    semantic/              # Serena MCP semantic code intelligence adapter
+    structural/             # ast-grep structural search/refactor adapter
+    self-improve/          # Learning tracker, auto-trigger, skill generation
+    memory/                 # Remote Nexus memory adapter
+    llm/                    # Tool runtime, provider-agnostic tool schema
+    acp-client/             # Agent Client Protocol language model adapter
+    tui/                    # Terminal UI
+    desktop/                # Electron desktop application
+    web/, app/, console/    # Web app, console UI, and console services
+    session-ui/, ui/        # Shared session and UI component libraries
+    server/                 # HTTP/API server
+    sdk/, sdk-next/, client/, httpapi-codegen/  # Generated/typed SDKs
+    stats/, workflows/, slack/, enterprise/     # Auxiliary services
+  docs/                    # Architecture, adapter contracts, CI/CD, release docs
+  specs/                   # API specifications and design docs
+  eval/                    # Vendored reference repos for evaluated tools (git-ignored from indexing)
+  script/, scripts/        # Build and utility scripts
+  infra/, nix/             # Infrastructure and Nix build config
 ```
+
+> Package list generated from `packages/*` — see [docs/development.md](./docs/development.md) for the authoritative, maintained breakdown.
 
 ---
 

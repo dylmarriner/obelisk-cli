@@ -123,7 +123,7 @@ export class SkillGenerator {
 
   // ─── Pattern Extraction ───────────────────────────────────────
 
-  private extractPatterns(learnings: Learning): Pattern[] {
+  private extractPatterns(learnings: Learning[]): Pattern[] {
     const patterns: Pattern[] = [];
     const groups = new Map<string, Learning[]>();
 
@@ -181,8 +181,8 @@ export class SkillGenerator {
       const metaMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
       if (!metaMatch) return null;
 
-      const meta = this.parseFrontmatter(metaMatch[1]);
-      return { meta, body: metaMatch[2].trim(), filePath };
+      const meta = this.parseFrontmatter(metaMatch[1]!);
+      return { meta, body: metaMatch[2]!.trim(), filePath };
     } catch {
       return null;
     }

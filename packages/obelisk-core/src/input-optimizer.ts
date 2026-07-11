@@ -14,7 +14,7 @@
  *  L4  Blank line collapse        3-8%     Max 1 blank line between content
  *  L5  Identical line dedup       10-30%   Collapse runs of identical lines
  *  L6  Terse prose                15-25%   Filler words, greetings, articles, prepositions (4 levels)
- *  L7  Code comment strip         10-40%   //, /* */, #, <!-- -->, REM — reversible
+ *  L7  Code comment strip         10-40%   //, block comments, #, <!-- -->, REM — reversible
  *  L8  Import/export compaction   5-15%    Collapse import blocks, deduplicate specifiers
  *  L9  Type signature compact     5-10%    Compact verbose TypeScript/type annotations
  * L10  String literal truncate    5-20%    Truncate long strings (>100 chars) in code
@@ -175,7 +175,7 @@ export class InputOptimizer {
     current = this.layer6Tersify(current, layers);
 
     // Protect code blocks for language-specific layers
-    const { text: protected_, blocks } = this.protectCodeBlocks(current);
+    const { text_: protected_, blocks } = this.protectCodeBlocks(current);
 
     // L7: Strip code comments
     let afterCode = protected_;
@@ -328,10 +328,10 @@ export class InputOptimizer {
       }
       const run = j - i;
       if (run >= this.options.dedupThreshold) {
-        result.push(lines[i]);
+        result.push(lines[i]!);
         result.push(`  … [×${run} identical lines collapsed]`);
       } else {
-        for (let k = i; k < j; k++) result.push(lines[k]);
+        for (let k = i; k < j; k++) result.push(lines[k]!);
       }
       i = j;
     }
@@ -387,7 +387,7 @@ export class InputOptimizer {
 
     // Restore code blocks
     for (let i = 0; i < codeBlocks.length; i++) {
-      result = result.replace(`\u{0000}CODE${i}\u{0000}`, codeBlocks[i]);
+      result = result.replace(`\u{0000}CODE${i}\u{0000}`, codeBlocks[i]!);
     }
 
     const after = estimateTokens(result);
@@ -402,7 +402,7 @@ export class InputOptimizer {
 
     // Process each code block
     for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
+      const block = blocks[i]!;
       const lang = block.match(/^```(\w*)/)?.[1] || "";
       const stripped = this.stripCommentsFromCode(block, lang);
       if (stripped !== block) {
@@ -421,7 +421,7 @@ export class InputOptimizer {
     let result = text;
 
     for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
+      const block = blocks[i]!;
       const lang = block.match(/^```(\w*)/)?.[1] || "";
       const compacted = this.compactImportsInBlock(block, lang);
       if (compacted !== block) {
@@ -440,7 +440,7 @@ export class InputOptimizer {
     let result = text;
 
     for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
+      const block = blocks[i]!;
       const lang = block.match(/^```(\w*)/)?.[1] || "";
       if (!["ts", "tsx", "js", "jsx", "rust", "go", "java", "kotlin", "scala"].includes(lang)) continue;
 
@@ -472,7 +472,7 @@ export class InputOptimizer {
     let result = text;
 
     for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
+      const block = blocks[i]!;
       // Truncate long string literals (>100 chars) in code
       let compacted = block.replace(/(["'`])([^"'`]{100,}?)\1/g, (match, quote, content) => {
         const h = this.store.store(match, "string-literal");
@@ -494,7 +494,7 @@ export class InputOptimizer {
     let result = text;
 
     for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
+      const block = blocks[i]!;
       const lang = block.match(/^```(\w*)/)?.[1] || "";
       if (!["ts", "tsx", "js", "jsx", "rust", "go", "java", "c", "cpp", "csharp", "kotlin", "scala", "php", "swift", "dart"].includes(lang)) continue;
 
@@ -554,7 +554,7 @@ export class InputOptimizer {
         result.push(`  … [pattern ×${bestCount} — blob:${handle}]`);
         i += bestCount * bestLength;
       } else {
-        result.push(lines[i]);
+        result.push(lines[i]!);
         i++;
       }
     }
@@ -696,7 +696,7 @@ export class InputOptimizer {
   private restoreCodeBlocks(text: string, blocks: string[]): string {
     let result = text;
     for (let i = 0; i < blocks.length; i++) {
-      result = result.replace(`\u{0000}C${i}\u{0000}`, blocks[i]);
+      result = result.replace(`\u{0000}C${i}\u{0000}`, blocks[i]!);
     }
     return result;
   }
@@ -767,8 +767,8 @@ export class InputOptimizer {
 
       // Collect imports by source
       while ((match = importRegex.exec(content)) !== null) {
-        const source = match[2];
-        const specifiers = match[1].trim();
+        const source = match[2]!;
+        const specifiers = match[1]!.trim();
         if (!importMap.has(source)) importMap.set(source, new Set());
         // Extract individual specifiers
         const items = specifiers.replace(/[{}]/g, "").split(",").map((s) => s.trim());
@@ -801,8 +801,8 @@ export class InputOptimizer {
       let match;
 
       while ((match = importRegex.exec(content)) !== null) {
-        const source = match[1];
-        const items = match[2].split(",").map((s) => s.trim().split(" as ")[0]);
+        const source = match[1]!;
+        const items = match[2]!.split(",").map((s) => s.trim().split(" as ")[0]!);
         if (!importMap.has(source)) importMap.set(source, new Set());
         for (const item of items) {
           if (item) importMap.get(source)!.add(item);

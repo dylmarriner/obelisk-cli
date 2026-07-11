@@ -29,7 +29,10 @@ export class ReversibleBlobStore {
    */
   store(content: string, label?: string): string {
     const hash = crypto.createHash("sha256").update(content).digest("hex");
-    const handle = label ? `${label}-${hash.slice(0, 12)}` : hash.slice(0, 16);
+    // Labels are often full file paths; strip anything that could be
+    // interpreted as a path separator so the handle stays a flat filename.
+    const safeLabel = label?.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-64);
+    const handle = safeLabel ? `${safeLabel}-${hash.slice(0, 12)}` : hash.slice(0, 16);
 
     const filePath = path.join(this.blobsDir, `${handle}.blob`);
     if (!fs.existsSync(filePath)) {

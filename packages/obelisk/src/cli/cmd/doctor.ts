@@ -1,5 +1,5 @@
 import type { Argv } from "yargs"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { EOL } from "os"
 
@@ -23,23 +23,23 @@ export const DoctorCommand = effectCmd({
       if (ok) {
         passed++
         if (verbose) {
-          Console.log(`  ✓ ${name}${detail ? ` — ${detail}` : ""}`)
+          console.log(`  ✓ ${name}${detail ? ` — ${detail}` : ""}`)
         }
       } else {
         failed++
-        Console.log(`  ✗ ${name}${detail ? ` — ${detail}` : ""}`)
+        console.log(`  ✗ ${name}${detail ? ` — ${detail}` : ""}`)
       }
     }
 
     const warn = (name: string, detail: string) => {
       warnings++
-      Console.log(`  ⚠ ${name} — ${detail}`)
+      console.log(`  ⚠ ${name} — ${detail}`)
     }
 
-    Console.log("")
-    Console.log("  Obelisk CLI Diagnostics")
-    Console.log("  " + "─".repeat(40))
-    Console.log("")
+    console.log("")
+    console.log("  Obelisk CLI Diagnostics")
+    console.log("  " + "─".repeat(40))
+    console.log("")
 
     // Environment checks
     check("Node.js runtime", typeof process !== "undefined" && !!process.version, `v${process.version}`)
@@ -71,13 +71,13 @@ export const DoctorCommand = effectCmd({
     check("Tailscale", true, verbose ? "transport layer available" : undefined)
 
     // Summary
-    Console.log("")
-    Console.log(`  ${"─".repeat(40)}`)
-    Console.log(`  Results: ${passed} passed, ${failed} failed, ${warnings} warnings`)
-    Console.log("")
+    console.log("")
+    console.log(`  ${"─".repeat(40)}`)
+    console.log(`  Results: ${passed} passed, ${failed} failed, ${warnings} warnings`)
+    console.log("")
 
     if (failed > 0) {
-      Console.log("  Some checks failed. See above for details." + EOL)
+      console.log("  Some checks failed. See above for details." + EOL)
     }
   }),
 })

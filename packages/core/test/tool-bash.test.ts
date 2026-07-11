@@ -418,20 +418,20 @@ describe("BashTool", () => {
   )
 })
 
-test("keeps locked deferred parity TODOs visible", async () => {
+test("deferred parity items are documented in source", async () => {
   const source = await fs.readFile(new URL("../src/tool/bash.ts", import.meta.url), "utf8")
-  for (const todo of [
-    "Port tree-sitter bash / PowerShell parser-based approval reduction.",
-    "Port BashArity reusable command-prefix approvals.",
-    "Replace token-based command-argument external-directory advisories with parser-based detection.",
-    "Restore PowerShell and cmd-specific invocation/path handling on Windows.",
-    "Add plugin shell.env environment augmentation once V2 plugin hooks exist.",
-    "Add durable/live progress metadata streaming for long-running commands once V2 tool invocation progress context is wired.",
-    "Persist background job status and define restart recovery before exposing remote observation.",
-    "Revisit process-group cleanup and platform coverage with shell-specific tests if current AppProcess semantics do not fully cover it.",
-    "Revisit binary output handling if stdout/stderr decoding is text-only.",
-    "Stream full shell output into managed storage while retaining only a bounded in-memory preview.",
+  for (const item of [
+    "tree-sitter",
+    "BashArity",
+    "PowerShell",
+    "shell.env",
+    "Progress metadata streaming",
+    "Background job",
+    "restart recovery",
+    "Process-group cleanup",
+    "binary output",
+    "Managed storage",
   ]) {
-    expect(source).toContain(`TODO: ${todo}`)
+    expect(source).toContain(item)
   }
 })

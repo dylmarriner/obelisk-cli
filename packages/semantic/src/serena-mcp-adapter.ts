@@ -56,11 +56,12 @@ export class SerenaMcpAdapter implements SemanticCodeAdapter {
     command?: string;
     args?: string[];
   } = {}) {
-    this.startCommand = options.command || "uvx";
-    this.startArgs = options.args || [
-      "--from", "git+https://github.com/oraios/serena",
-      "serena", "start-mcp-server",
-    ];
+    // Uses the "serena" entrypoint installed from the vendored eval/serena/
+    // source (see docs/roadmap.md) rather than pulling from GitHub at
+    // runtime via uvx. Without --project, the server starts with no active
+    // project and all symbol tools silently return empty results.
+    this.startCommand = options.command || "serena";
+    this.startArgs = options.args || ["start-mcp-server", "--project", process.cwd()];
   }
 
   // ─── Status ───────────────────────────────────────────────────
@@ -71,8 +72,10 @@ export class SerenaMcpAdapter implements SemanticCodeAdapter {
         await this.ensureRunning();
       }
 
-      // Try calling a simple tool to verify connectivity
-      const result = await this.callTool("serena_info", { topic: "status" });
+      // Try calling a simple tool to verify connectivity.
+      // "serena_info" is not a registered tool for the default toolset —
+      // use "get_current_config", which reliably is.
+      await this.callTool("get_current_config", {});
 
       return {
         available: true,
@@ -189,7 +192,20 @@ export class SerenaMcpAdapter implements SemanticCodeAdapter {
         params: { name: tool, arguments: params },
       };
 
-      this.pending.set(id, { resolve, reject });
+      // MCP tool results arrive as { content: [{ type: "text", text: "..." }], structuredContent, isError }
+      // — unwrap to the text payload the parse* helpers expect.
+      this.pending.set(id, {
+        resolve: (raw: unknown) => {
+          const result = raw as { content?: { type?: string; text?: string }[]; structuredContent?: { result?: string }; isError?: boolean } | undefined;
+          if (result?.isError) {
+            reject(new Error(result.content?.[0]?.text || "Serena tool call failed"));
+            return;
+          }
+          const text = result?.content?.find((c) => c.type === "text")?.text ?? result?.structuredContent?.result;
+          resolve(text);
+        },
+        reject,
+      });
 
       if (!this.process?.stdin) {
         this.pending.delete(id);
@@ -249,6 +265,9 @@ export class SerenaMcpAdapter implements SemanticCodeAdapter {
       const onInit = (msg: MCPResponse) => {
         if (msg.id === 0) {
           this.emitter.off("message", onInit);
+          // MCP requires the client to notify the server once initialize
+          // completes — without this, servers may ignore later requests.
+          proc.stdin?.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
           this.started = true;
           resolve();
         }
@@ -311,79 +330,105 @@ export class SerenaMcpAdapter implements SemanticCodeAdapter {
 
   // ─── Result Parsers ───────────────────────────────────────────
 
+  // get_symbols_overview returns { "<Kind>": [name | { name: { <Kind>: [...] } }, ...] }
+  // — a kind-keyed map of names, with nested symbols represented as
+  // single-key objects rather than a flat list with positions.
   private parseSymbolsOverview(output: unknown): CodeSymbol[] {
     if (!output || typeof output !== "string") return [];
 
-    const symbols: CodeSymbol[] = [];
-    const lines = output.split("\n");
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(output);
+    } catch {
+      return [];
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return [];
 
-    for (const line of lines) {
-      const match = line.match(/^(\s*)(\S+)\s+(\S+)\s+(\d+):(\d+)/);
-      if (match) {
-        symbols.push({
-          name: match[2],
-          kind: match[3] || "symbol",
-          file: "",
-          line: parseInt(match[4], 10),
-          column: parseInt(match[5], 10),
-        });
+    const symbols: CodeSymbol[] = [];
+    const collect = (kind: string, entry: unknown) => {
+      if (typeof entry === "string") {
+        symbols.push({ name: entry, kind, file: "", line: 0, column: 0 });
+        return;
+      }
+      if (entry && typeof entry === "object") {
+        for (const [name, nested] of Object.entries(entry as Record<string, unknown>)) {
+          const children: CodeSymbol[] = [];
+          if (nested && typeof nested === "object") {
+            for (const [childKind, childEntries] of Object.entries(nested as Record<string, unknown>)) {
+              if (Array.isArray(childEntries)) {
+                for (const child of childEntries) {
+                  const before = symbols.length;
+                  collect(childKind, child);
+                  children.push(...symbols.splice(before));
+                }
+              }
+            }
+          }
+          symbols.push({ name, kind, file: "", line: 0, column: 0, children: children.length ? children : undefined });
+        }
+      }
+    };
+
+    for (const [kind, entries] of Object.entries(parsed as Record<string, unknown>)) {
+      if (Array.isArray(entries)) {
+        for (const entry of entries) collect(kind, entry);
       }
     }
 
     return symbols;
   }
 
+  // find_symbol returns a JSON array of:
+  //   { name_path, kind, relative_path, body_location: { start_line, end_line } }
+  // with 0-indexed lines.
   private parseSymbolResults(output: unknown): CodeSymbol[] {
     if (!output || typeof output !== "string") return [];
 
-    const symbols: CodeSymbol[] = [];
-    const lines = output.split("\n");
-    let current: Partial<CodeSymbol> | null = null;
-
-    for (const line of lines) {
-      const headerMatch = line.match(/^([\w.]+)\s+\((\w+)\)\s+at\s+([^:]+):(\d+):(\d+)/);
-      if (headerMatch) {
-        if (current && current.name) {
-          symbols.push(current as CodeSymbol);
-        }
-        current = {
-          name: headerMatch[1],
-          kind: headerMatch[2],
-          file: headerMatch[3],
-          line: parseInt(headerMatch[4], 10),
-          column: parseInt(headerMatch[5], 10),
-        };
-      } else if (current && line.trim().startsWith("//") || line.trim().startsWith("/*")) {
-        current.documentation = (current.documentation || "") + line.trim() + "\n";
-      } else if (current && line.trim() && !line.startsWith(" ")) {
-        // Signature line
-        current.signature = (current.signature || "") + line.trim();
-      }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(output);
+    } catch {
+      return [];
     }
+    if (!Array.isArray(parsed)) return [];
 
-    if (current && current.name) {
-      symbols.push(current as CodeSymbol);
-    }
-
-    return symbols;
+    return parsed.map((item: any) => ({
+      name: item.name_path ?? "",
+      kind: item.kind ?? "symbol",
+      file: item.relative_path ?? "",
+      line: (item.body_location?.start_line ?? -1) + 1,
+      column: 0,
+      body: item.body,
+    }));
   }
 
+  // find_referencing_symbols returns:
+  //   { "<relative_path>": { "<Kind>": [{ name_path, body_location, content_around_reference }] } }
   private parseReferenceResults(output: unknown): CodeReference[] {
     if (!output || typeof output !== "string") return [];
 
-    const refs: CodeReference[] = [];
-    const lines = output.split("\n");
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(output);
+    } catch {
+      return [];
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return [];
 
-    for (const line of lines) {
-      const match = line.match(/^([^:]+):(\d+):(\d+):(.+)/);
-      if (match) {
-        refs.push({
-          symbol: match[4].trim(),
-          file: match[1],
-          line: parseInt(match[2], 10),
-          column: parseInt(match[3], 10),
-          context: match[4].trim(),
-        });
+    const refs: CodeReference[] = [];
+    for (const [file, byKind] of Object.entries(parsed as Record<string, unknown>)) {
+      if (!byKind || typeof byKind !== "object") continue;
+      for (const entries of Object.values(byKind as Record<string, unknown>)) {
+        if (!Array.isArray(entries)) continue;
+        for (const entry of entries as any[]) {
+          refs.push({
+            symbol: entry.name_path ?? "",
+            file,
+            line: (entry.body_location?.start_line ?? -1) + 1,
+            column: 0,
+            context: entry.content_around_reference ?? "",
+          });
+        }
       }
     }
 

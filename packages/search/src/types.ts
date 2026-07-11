@@ -24,9 +24,10 @@ export interface SearchQuery {
 
 export interface IndexRequest {
   repoPath: string;
-  indexDir: string;
+  indexDir?: string;
   name?: string;
   incremental?: boolean;
+  ignoreDirs?: string;
 }
 
 export interface IndexResult {
@@ -48,7 +49,7 @@ export interface IndexStatus {
 export interface SearchAdapter {
   search(query: SearchQuery): Promise<SearchResult[]>;
   index(input: IndexRequest): Promise<IndexResult>;
-  status(input: { indexDir: string }): Promise<IndexStatus>;
+  status(input: { indexDir?: string }): Promise<IndexStatus>;
   rebuild(input: IndexRequest): Promise<IndexResult>;
   available(): Promise<boolean>;
 }

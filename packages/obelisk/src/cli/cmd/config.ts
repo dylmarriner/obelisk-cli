@@ -1,5 +1,5 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
@@ -18,7 +18,6 @@ export const ConfigCommand = cmd({
 const ConfigGetCommand = effectCmd({
   command: "get [key]",
   describe: "show resolved configuration value for a key, or the full config",
-  instance: false,
   builder: (yargs: Argv) =>
     yargs
       .positional("key", {
@@ -31,26 +30,35 @@ const ConfigGetCommand = effectCmd({
         default: false,
       }),
   handler: Effect.fn("Cli.config.get")(function* (args) {
-    const { Config } = yield* Effect.promise(() => import("@/config/config"))
-    const config = yield* Config.Service.use((cfg) => cfg.get())
-    const key = args.key
+    const fs = yield* Effect.promise(() => import("fs"))
+    const pathMod = yield* Effect.promise(() => import("path"))
+    const configPath = pathMod.default.resolve(process.cwd(), "obelisk.config.jsonc")
+    let config: Record<string, unknown> = {}
+    try {
+      const raw = fs.readFileSync(configPath, "utf-8")
+      const jsonc = yield* Effect.promise(() => import("jsonc-parser"))
+      config = jsonc.parse(raw) || {}
+    } catch {
+      // No config file found, use empty config
+      console.log("  No configuration file found at obelisk.config.jsonc" + EOL)
+      return
+    }
 
+    const key = args.key
     if (!key) {
-      // Print full config
       if (args.json) {
         process.stdout.write(JSON.stringify(config, null, 2) + EOL)
       } else {
-        Console.log("")
-        Console.log("  Resolved Configuration")
-        Console.log("  " + "─".repeat(40))
-        Console.log("")
-        printConfig(config, 0)
-        Console.log("")
+        console.log("")
+        console.log("  Resolved Configuration")
+        console.log("  " + "─".repeat(40))
+        console.log("")
+        console.log(JSON.stringify(config, null, 2))
+        console.log("")
       }
       return
     }
 
-    // Navigate the key path (e.g. "nexus.endpoint" -> config.nexus.endpoint)
     const parts = key.split(".")
     let value: unknown = config
     for (const part of parts) {
@@ -63,14 +71,14 @@ const ConfigGetCommand = effectCmd({
     }
 
     if (value === undefined) {
-      Console.log(`  Key "${key}" not found in resolved configuration.` + EOL)
+      console.log(`  Key "${key}" not found in configuration.` + EOL)
       return
     }
 
     if (args.json) {
       process.stdout.write(JSON.stringify(value, null, 2) + EOL)
     } else {
-      Console.log(`  ${key}: ${typeof value === "string" ? value : JSON.stringify(value, null, 2)}` + EOL)
+      console.log(`  ${key}: ${typeof value === "string" ? value : JSON.stringify(value, null, 2)}` + EOL)
     }
   }),
 })
@@ -80,8 +88,23 @@ const ConfigDoctorCommand = effectCmd({
   describe: "validate configuration and report issues",
   instance: false,
   handler: Effect.fn("Cli.config.doctor")(function* () {
-    const { Config } = yield* Effect.promise(() => import("@/config/config"))
-    const config = yield* Config.Service.use((cfg) => cfg.get())
+    const fs = yield* Effect.promise(() => import("fs"))
+    const pathMod = yield* Effect.promise(() => import("path"))
+    const configPath = pathMod.default.resolve(process.cwd(), "obelisk.config.jsonc")
+    let config: Record<string, unknown> = {}
+    try {
+      const raw = fs.readFileSync(configPath, "utf-8")
+      const jsonc = yield* Effect.promise(() => import("jsonc-parser"))
+      config = jsonc.parse(raw) || {}
+    } catch {
+      console.log("")
+      console.log("  Configuration Diagnostics")
+      console.log("  " + "─".repeat(40))
+      console.log("")
+      console.log("  ✗ No configuration file found at obelisk.config.jsonc")
+      console.log("")
+      return
+    }
 
     let passed = 0
     let failed = 0
@@ -90,22 +113,22 @@ const ConfigDoctorCommand = effectCmd({
     const check = (name: string, ok: boolean, detail?: string) => {
       if (ok) {
         passed++
-        if (detail) Console.log(`  ✓ ${name} — ${detail}`)
+        if (detail) console.log(`  ✓ ${name} — ${detail}`)
       } else {
         failed++
-        Console.log(`  ✗ ${name}${detail ? ` — ${detail}` : ""}`)
+        console.log(`  ✗ ${name}${detail ? ` — ${detail}` : ""}`)
       }
     }
 
     const warn = (name: string, detail: string) => {
       warnings++
-      Console.log(`  ⚠ ${name} — ${detail}`)
+      console.log(`  ⚠ ${name} — ${detail}`)
     }
 
-    Console.log("")
-    Console.log("  Configuration Diagnostics")
-    Console.log("  " + "─".repeat(40))
-    Console.log("")
+    console.log("")
+    console.log("  Configuration Diagnostics")
+    console.log("  " + "─".repeat(40))
+    console.log("")
 
     // Check model configuration
     const model = (config as Record<string, unknown>).model
@@ -155,10 +178,10 @@ const ConfigDoctorCommand = effectCmd({
     }
 
     // Summary
-    Console.log("")
-    Console.log(`  ${"─".repeat(40)}`)
-    Console.log(`  Results: ${passed} passed, ${failed} failed, ${warnings} warnings`)
-    Console.log("")
+    console.log("")
+    console.log(`  ${"─".repeat(40)}`)
+    console.log(`  Results: ${passed} passed, ${failed} failed, ${warnings} warnings`)
+    console.log("")
   }),
 })
 
@@ -168,14 +191,14 @@ function printConfig(obj: Record<string, unknown>, depth: number) {
     if (value === null || value === undefined) continue
     if (key === "provider" || key === "permission") {
       // Redact sensitive sections
-      Console.log(`${indent}${key}: ${JSON.stringify(value).length} bytes (redacted)`)
+      console.log(`${indent}${key}: ${JSON.stringify(value).length} bytes (redacted)`)
     } else if (typeof value === "object" && !Array.isArray(value)) {
-      Console.log(`${indent}${key}:`)
+      console.log(`${indent}${key}:`)
       printConfig(value as Record<string, unknown>, depth + 1)
     } else if (Array.isArray(value)) {
-      Console.log(`${indent}${key}: [${value.length} items]`)
+      console.log(`${indent}${key}: [${value.length} items]`)
     } else {
-      Console.log(`${indent}${key}: ${String(value).substring(0, 100)}`)
+      console.log(`${indent}${key}: ${String(value).substring(0, 100)}`)
     }
   }
 }

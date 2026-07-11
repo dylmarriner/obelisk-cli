@@ -14,6 +14,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { SkillGenerator } from "./skill-generator";
 
 const LEARNINGS_DIR = ".obelisk/learnings";
 const MAX_LEARNINGS = 1000;
@@ -42,15 +43,19 @@ export interface LearningStats {
 export class LearningTracker {
   private learningsDir: string;
   private logFile: string;
+  private skillGenerator: SkillGenerator;
 
   constructor(baseDir?: string) {
     this.learningsDir = path.join(baseDir || process.cwd(), LEARNINGS_DIR);
     this.logFile = path.join(this.learningsDir, "learnings.jsonl");
     fs.mkdirSync(this.learningsDir, { recursive: true });
+    this.skillGenerator = new SkillGenerator(baseDir);
   }
 
   /**
-   * Record a new learning observation.
+   * Record a new learning observation. Every learning is also offered to
+   * the skill generator immediately — turning "the agent learned something
+   * while doing work" into a reusable skill file without a separate command.
    */
   async record(input: Omit<Learning, "id" | "timestamp">): Promise<Learning> {
     const learning: Learning = {
@@ -66,6 +71,9 @@ export class LearningTracker {
     } catch {
       // Silently fail — learning is non-critical
     }
+
+    // Fire-and-forget: skill generation must never block or fail a learning record.
+    this.skillGenerator.generateFromLearning(learning).catch(() => {});
 
     return learning;
   }

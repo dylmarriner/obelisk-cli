@@ -99,8 +99,13 @@ const make = (options: Config) =>
       executeUnprepared(query, params, transformRows) {
         return this.execute(query, params, transformRows)
       },
-      executeStream() {
-        return Stream.die("executeStream not implemented")
+      executeStream(query: string, params: ReadonlyArray<unknown> = []) {
+        return Stream.unwrap(
+          Effect.map(
+            run(query, params),
+            (rows) => Stream.fromIterable(rows.map((row) => [row] as Array<Record<string, unknown>>)),
+          ),
+        )
       },
       loadExtension: (path) =>
         Effect.try({

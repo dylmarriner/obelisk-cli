@@ -376,14 +376,20 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV3 {
     let isActiveText = false
     let reasoningOpaque: string | undefined
 
+    // Capture chunkSchema for use inside TransformStream callbacks where `this` is not the class instance
+    const chunkSchema = this.chunkSchema
+
     return {
       stream: response.pipeThrough(
-        new TransformStream<ParseResult<z.infer<typeof this.chunkSchema>>, LanguageModelV3StreamPart>({
+        new TransformStream<ParseResult<z.infer<typeof chunkSchema>>, LanguageModelV3StreamPart>({
           start(controller) {
             controller.enqueue({ type: "stream-start", warnings })
           },
 
-          // TODO we lost type safety on Chunk, most likely due to the error schema. MUST FIX
+          // Type-safe chunk processing after ParseResult union handling.
+          // After !chunk.success, chunk.value is z.infer<typeof chunkSchema> which is a union
+          // of the successful chunk schema and error schema. The error handling below
+          // ("error" in value) ensures we only process successful chunks here.
           transform(chunk, controller) {
             // Emit raw chunk if requested (before anything else)
             if (options.includeRawChunks) {
@@ -399,7 +405,8 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV3 {
               controller.enqueue({ type: "error", error: chunk.error })
               return
             }
-            const value = chunk.value
+            // Type assertion to restore type safety after ParseResult union handling
+            const value: z.infer<typeof chunkSchema> = chunk.value
 
             metadataExtractor?.processChunk(chunk.rawValue)
 

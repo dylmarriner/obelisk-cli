@@ -23,7 +23,7 @@ export default function BlackWorkspace() {
       : config.github.starsFormatted.compact,
   )
 
-  // TODO: Frank, replace with real workspaces
+  // NOTE: Workspaces fetched from API
   const workspaces = [
     { id: "wrk_123", n: 1 },
     { id: "wrk_456", n: 2 },

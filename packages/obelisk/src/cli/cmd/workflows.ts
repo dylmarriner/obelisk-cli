@@ -1,5 +1,5 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
@@ -24,17 +24,17 @@ const WorktreeListCommand = effectCmd({
   handler: Effect.fn("Cli.worktree.list")(function* () {
     const mgr = new GitWorktreeManager()
 
-    Console.log("")
-    Console.log("  Git Worktrees")
-    Console.log("  " + "─".repeat(40))
-    Console.log("")
+    console.log("")
+    console.log("  Git Worktrees")
+    console.log("  " + "─".repeat(40))
+    console.log("")
 
     try {
       const worktrees = yield* Effect.promise(() => mgr.list())
 
       if (worktrees.length === 0) {
-        Console.log("  No worktrees found.")
-        Console.log("")
+        console.log("  No worktrees found.")
+        console.log("")
         return
       }
 
@@ -46,8 +46,8 @@ const WorktreeListCommand = effectCmd({
         console.log("")
       }
     } catch (err) {
-      Console.log(`  ✗ Failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -58,26 +58,26 @@ const WorktreeCreateCommand = effectCmd({
   instance: false,
   builder: (yargs: Argv) =>
     yargs
-      .positional("branch", { type: "string", describe: "branch name for the worktree" })
-      .positional("dir", { type: "string", describe: "directory for the worktree" })
+      .positional("branch", { type: "string", describe: "branch name for the worktree", demandOption: true })
+      .positional("dir", { type: "string", describe: "directory for the worktree", demandOption: true })
       .option("base", { type: "string", describe: "base branch to fork from" }),
   handler: Effect.fn("Cli.worktree.create")(function* (args) {
     const mgr = new GitWorktreeManager()
 
-    Console.log("")
-    Console.log(`  Creating worktree "${args.branch}" at ${args.dir}...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Creating worktree "${args.branch}" at ${args.dir}...`)
+    console.log("")
 
     try {
       const wt = yield* Effect.promise(() =>
         mgr.create({ branch: args.branch, targetDir: args.dir, baseBranch: args.base })
       )
-      Console.log(`  ✓ Worktree created at ${wt.path}`)
-      Console.log(`    Branch: ${wt.branch}`)
-      Console.log("")
+      console.log(`  ✓ Worktree created at ${wt.path}`)
+      console.log(`    Branch: ${wt.branch}`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -87,18 +87,18 @@ const WorktreeRemoveCommand = effectCmd({
   describe: "remove a worktree",
   instance: false,
   builder: (yargs: Argv) =>
-    yargs.positional("path", { type: "string", describe: "path to the worktree to remove" }),
+    yargs.positional("path", { type: "string", describe: "path to the worktree to remove", demandOption: true }),
   handler: Effect.fn("Cli.worktree.remove")(function* (args) {
     const mgr = new GitWorktreeManager()
 
-    Console.log("")
+    console.log("")
     try {
       yield* Effect.promise(() => mgr.remove(args.path))
-      Console.log(`  ✓ Worktree removed: ${args.path}`)
-      Console.log("")
+      console.log(`  ✓ Worktree removed: ${args.path}`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -124,16 +124,16 @@ const TaskListCommand = effectCmd({
   handler: Effect.fn("Cli.task.list")(function* () {
     const mgr = new LocalTaskManager()
 
-    Console.log("")
-    Console.log("  Tasks")
-    Console.log("  " + "─".repeat(40))
-    Console.log("")
+    console.log("")
+    console.log("  Tasks")
+    console.log("  " + "─".repeat(40))
+    console.log("")
 
     const tasks = yield* Effect.promise(() => mgr.list())
 
     if (tasks.length === 0) {
-      Console.log("  No tasks found.")
-      Console.log("")
+      console.log("  No tasks found.")
+      console.log("")
       return
     }
 
@@ -157,22 +157,22 @@ const TaskStatusCommand = effectCmd({
   describe: "show task status and details",
   instance: false,
   builder: (yargs: Argv) =>
-    yargs.positional("id", { type: "string", describe: "task ID" }),
+    yargs.positional("id", { type: "string", describe: "task ID", demandOption: true }),
   handler: Effect.fn("Cli.task.status")(function* (args) {
     const mgr = new LocalTaskManager()
     const task = yield* Effect.promise(() => mgr.get(args.id))
 
     if (!task) {
-      Console.log(`  Task not found: ${args.id}`)
+      console.log(`  Task not found: ${args.id}`)
       return
     }
 
-    Console.log("")
-    Console.log(`  Task: ${task.id}`)
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Goal:     ${task.goal}`)
-    Console.log(`  Status:   ${task.status}`)
-    Console.log(`  Model:    ${task.model}`)
+    console.log("")
+    console.log(`  Task: ${task.id}`)
+    console.log("  " + "─".repeat(40))
+    console.log(`  Goal:     ${task.goal}`)
+    console.log(`  Status:   ${task.status}`)
+    console.log(`  Model:    ${task.model}`)
     console.log(`  Steps:    ${task.currentStep}/${task.steps}`)
     console.log(`  Files:    ${task.filesTouched.length}`)
     if (task.worktree) console.log(`  Worktree: ${task.worktree}`)
@@ -187,23 +187,23 @@ const TaskResumeCommand = effectCmd({
   describe: "resume a paused or incomplete task",
   instance: false,
   builder: (yargs: Argv) =>
-    yargs.positional("id", { type: "string", describe: "task ID to resume" }),
+    yargs.positional("id", { type: "string", describe: "task ID to resume", demandOption: true }),
   handler: Effect.fn("Cli.task.resume")(function* (args) {
     const mgr = new LocalTaskManager()
 
-    Console.log("")
+    console.log("")
     try {
       const { task, checkpoint } = yield* Effect.promise(() => mgr.resume(args.id))
-      Console.log(`  ✓ Resumed task: ${task.id}`)
-      Console.log(`    Goal: ${task.goal}`)
+      console.log(`  ✓ Resumed task: ${task.id}`)
+      console.log(`    Goal: ${task.goal}`)
       if (checkpoint) {
         console.log(`    Checkpoint: step ${checkpoint.step} — ${checkpoint.description}`)
         console.log(`    Saved at: ${new Date(checkpoint.timestamp).toLocaleString()}`)
       }
-      Console.log("")
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -214,19 +214,19 @@ const TaskCheckpointCommand = effectCmd({
   instance: false,
   builder: (yargs: Argv) =>
     yargs
-      .positional("id", { type: "string", describe: "task ID" })
-      .positional("description", { type: "string", describe: "checkpoint description" }),
+      .positional("id", { type: "string", describe: "task ID", demandOption: true })
+      .positional("description", { type: "string", describe: "checkpoint description", demandOption: true }),
   handler: Effect.fn("Cli.task.checkpoint")(function* (args) {
     const mgr = new LocalTaskManager()
 
-    Console.log("")
+    console.log("")
     try {
       const cp = yield* Effect.promise(() => mgr.checkpoint(args.id, args.description))
-      Console.log(`  ✓ Checkpoint saved at step ${cp.step}`)
-      Console.log("")
+      console.log(`  ✓ Checkpoint saved at step ${cp.step}`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -236,18 +236,18 @@ const TaskRemoveCommand = effectCmd({
   describe: "remove a task record",
   instance: false,
   builder: (yargs: Argv) =>
-    yargs.positional("id", { type: "string", describe: "task ID to remove" }),
+    yargs.positional("id", { type: "string", describe: "task ID to remove", demandOption: true }),
   handler: Effect.fn("Cli.task.remove")(function* (args) {
     const mgr = new LocalTaskManager()
 
-    Console.log("")
+    console.log("")
     try {
       yield* Effect.promise(() => mgr.remove(args.id))
-      Console.log(`  ✓ Task removed: ${args.id}`)
-      Console.log("")
+      console.log(`  ✓ Task removed: ${args.id}`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })

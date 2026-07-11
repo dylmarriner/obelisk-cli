@@ -150,7 +150,6 @@ export const DEFAULT_THEMES: Record<string, ThemeJson> = {
   ["one-dark"]: onedark,
   ["osaka-jade"]: osakaJade,
   obelisk,
-  obelisk: obelisk,
   orng,
   ["lucent-orng"]: lucentOrng,
   palenight,

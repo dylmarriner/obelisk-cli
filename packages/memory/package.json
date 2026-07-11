@@ -10,6 +10,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "effect": "^4"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:"
   }
 }

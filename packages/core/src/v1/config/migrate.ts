@@ -71,7 +71,7 @@ export function migrate(info: typeof ConfigV1.Info.Type) {
   }
 }
 
-function permissions(info?: ConfigPermissionV1.Info, tools?: Readonly<Record<string, boolean>>) {
+function permissions(info?: ConfigPermissionV1.Info, tools?: Readonly<Record<string, unknown>>) {
   const rules: Array<{ action: string; resource: string; effect: ConfigPermissionV1.Action }> = Object.entries(
     tools ?? {},
   ).map(([action, enabled]) => ({

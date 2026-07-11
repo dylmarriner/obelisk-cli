@@ -1,5 +1,5 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
@@ -27,6 +27,7 @@ const MemoryRememberCommand = effectCmd({
       .positional("content", {
         type: "string",
         describe: "the fact, decision, or note to remember",
+        demandOption: true,
       })
       .option("tags", {
         type: "string",
@@ -45,9 +46,9 @@ const MemoryRememberCommand = effectCmd({
     const tags = args.tags || []
     const scope = args.scope || "project"
 
-    Console.log("")
-    Console.log("  Saving to memory...")
-    Console.log("")
+    console.log("")
+    console.log("  Saving to memory...")
+    console.log("")
 
     try {
       const record = yield* Effect.promise(() =>
@@ -62,18 +63,18 @@ const MemoryRememberCommand = effectCmd({
 
       const status = (record as any).status
       if (status === "queued") {
-        Console.log(`  ⚠ Nexus unavailable — memory queued locally`)
-        Console.log(`    ID: ${record.id}`)
-        Console.log("")
+        console.log(`  ⚠ Nexus unavailable — memory queued locally`)
+        console.log(`    ID: ${record.id}`)
+        console.log("")
       } else {
-        Console.log(`  ✓ Memory saved`)
-        Console.log(`    ID: ${record.id}`)
-        if (tags.length > 0) Console.log(`    Tags: ${tags.join(", ")}`)
-        Console.log("")
+        console.log(`  ✓ Memory saved`)
+        console.log(`    ID: ${record.id}`)
+        if (tags.length > 0) console.log(`    Tags: ${tags.join(", ")}`)
+        console.log("")
       }
     } catch (err) {
-      Console.log(`  ✗ Failed to save: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed to save: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -87,6 +88,7 @@ const MemoryRecallCommand = effectCmd({
       .positional("query", {
         type: "string",
         describe: "search query for finding relevant memories",
+        demandOption: true,
       })
       .option("tags", {
         type: "string",
@@ -104,9 +106,9 @@ const MemoryRecallCommand = effectCmd({
     const tags = args.tags || undefined
     const limit = args.limit || 10
 
-    Console.log("")
-    Console.log(`  Searching memory for "${query}"...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Searching memory for "${query}"...`)
+    console.log("")
 
     try {
       const results = yield* Effect.promise(() =>
@@ -114,13 +116,13 @@ const MemoryRecallCommand = effectCmd({
       )
 
       if (results.length === 0) {
-        Console.log("  No matching memories found.")
-        Console.log("")
+        console.log("  No matching memories found.")
+        console.log("")
         return
       }
 
-      Console.log(`  Found ${results.length} result(s):`)
-      Console.log("")
+      console.log(`  Found ${results.length} result(s):`)
+      console.log("")
 
       for (const record of results) {
         console.log(`    [${record.scope}] ${record.summary || record.content.substring(0, 120)}`)
@@ -131,8 +133,8 @@ const MemoryRecallCommand = effectCmd({
         console.log("")
       }
     } catch (err) {
-      Console.log(`  ✗ Search failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Search failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -145,19 +147,20 @@ const MemoryForgetCommand = effectCmd({
     yargs.positional("id", {
       type: "string",
       describe: "memory record ID to forget",
+      demandOption: true,
     }),
   handler: Effect.fn("Cli.memory.forget")(function* (args) {
     const adapter = createAdapter()
     const id = args.id
 
-    Console.log("")
+    console.log("")
     try {
       yield* Effect.promise(() => adapter.forget({ queryOrId: id }))
-      Console.log(`  ✓ Memory forgotten: ${id}`)
-      Console.log("")
+      console.log(`  ✓ Memory forgotten: ${id}`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Failed to forget: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed to forget: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -171,14 +174,14 @@ const MemoryOfflineCommand = effectCmd({
     const cache = new LocalMemoryCache(cachePath)
     const stats = cache.stats()
 
-    Console.log("")
-    Console.log("  Offline Memory Queue")
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Cache:     ${cachePath}`)
-    Console.log(`  Total:     ${stats.total}`)
-    Console.log(`  Pending:   ${stats.pending}`)
-    Console.log(`  Synced:    ${stats.synced}`)
-    Console.log("")
+    console.log("")
+    console.log("  Offline Memory Queue")
+    console.log("  " + "─".repeat(40))
+    console.log(`  Cache:     ${cachePath}`)
+    console.log(`  Total:     ${stats.total}`)
+    console.log(`  Pending:   ${stats.pending}`)
+    console.log(`  Synced:    ${stats.synced}`)
+    console.log("")
   }),
 })
 

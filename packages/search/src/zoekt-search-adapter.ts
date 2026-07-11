@@ -23,6 +23,8 @@ const execFile = promisify(cp.execFile);
 const DEFAULT_INDEX_DIR = ".obelisk/index/zoekt";
 const ZOEKT_BINARY = "zoekt";
 const ZOEKT_INDEX_BINARY = "zoekt-index";
+const DEFAULT_IGNORE_DIRS =
+  ".git,.hg,.svn,node_modules,.obelisk,dist,build,out,.next,.turbo,coverage,.venv,vendor,target,.bun,.tmp,.cache";
 
 // ─── Adapter ─────────────────────────────────────────────────────
 
@@ -53,26 +55,18 @@ export class ZoektSearchAdapter implements SearchAdapter {
 
     const args: string[] = [];
 
-    // Set index directory
-    args.push("-index", indexDir);
+    // Set index directory (zoekt's flag is -index_dir, not -index)
+    args.push("-index_dir", indexDir);
 
-    // Set max results
-    if (query.maxResults) {
-      args.push("-max_match_count", String(query.maxResults));
-    }
-
-    // Regex mode
-    if (query.regex) {
-      // Zoekt uses regex by default for complex patterns
-    }
-
-    // File filter
+    // zoekt has no -max_match_count or -f flags; result limiting is done
+    // client-side below, and file filtering is expressed inline in the
+    // query using zoekt's `file:` query syntax.
+    const queryParts: string[] = [];
     if (query.file) {
-      args.push("-f", query.file);
+      queryParts.push(`file:${query.file}`);
     }
-
-    // The query itself
-    args.push(query.query);
+    queryParts.push(query.query);
+    args.push(queryParts.join(" "));
 
     try {
       const { stdout, stderr } = await execFile(this.zoektBin, args, {
@@ -84,7 +78,8 @@ export class ZoektSearchAdapter implements SearchAdapter {
         throw new Error(stderr.trim());
       }
 
-      return this.parseResults(stdout, query.query);
+      const results = this.parseResults(stdout, query.query);
+      return query.maxResults ? results.slice(0, query.maxResults) : results;
     } catch (err: any) {
       if (err.code === "ENOENT") {
         throw new Error(
@@ -115,15 +110,13 @@ export class ZoektSearchAdapter implements SearchAdapter {
     // Set index directory
     args.push("-index", indexDir);
 
-    // Set name
-    if (input.name) {
-      args.push("-name", input.name);
-    }
+    // Exclude dependency/build/index directories so indexing doesn't walk
+    // into node_modules etc. and explode shard count/size.
+    args.push("-ignore_dirs", input.ignoreDirs || DEFAULT_IGNORE_DIRS);
 
-    // Incremental (default)
-    if (input.incremental !== false) {
-      args.push("-incremental");
-    }
+    // zoekt-index (eval/zoekt vendored build) has no -name or -incremental
+    // flags — indexing is incremental by default and repos are identified
+    // by their indexed path, not an explicit name.
 
     // The directory to index
     args.push(repoPath);
@@ -173,7 +166,7 @@ export class ZoektSearchAdapter implements SearchAdapter {
       };
     }
 
-    const shardFiles = fs.readdirSync(indexDir).filter((f) => f.endsWith(".shard"));
+    const shardFiles = fs.readdirSync(indexDir).filter((f) => f.endsWith(".zoekt"));
 
     // Try to search with empty query to check if index is valid
     let indexed = false;
@@ -223,15 +216,15 @@ export class ZoektSearchAdapter implements SearchAdapter {
     const lines = output.split("\n");
 
     for (const line of lines) {
-      // Zoekt output format: file:line:column:content
-      const match = line.match(/^([^:]+):(\d+):(\d+):(.*)$/);
+      // Zoekt text output format: file:line:content (no column)
+      const match = line.match(/^([^:]+):(\d+):(.*)$/);
       if (match) {
         results.push({
-          file: match[1],
-          line: parseInt(match[2], 10),
-          column: parseInt(match[3], 10),
-          content: match[4],
-          matchLength: match[4].length,
+          file: match[1]!,
+          line: parseInt(match[2]!, 10),
+          column: 0,
+          content: match[3]!,
+          matchLength: match[3]!.length,
         });
       }
     }
@@ -241,7 +234,7 @@ export class ZoektSearchAdapter implements SearchAdapter {
 
   private parseFileCount(output: string): number {
     const match = output.match(/(\d+)\s+files?/i);
-    return match ? parseInt(match[1], 10) : 0;
+    return match ? parseInt(match[1]!, 10) : 0;
   }
 
   private getIndexSize(indexDir: string): number {

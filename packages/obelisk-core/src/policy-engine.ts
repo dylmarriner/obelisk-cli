@@ -223,6 +223,22 @@ export class PolicyEngine {
       }
     }
 
+    if (this.config.denySecretFiles) {
+      // A shell command's target is the whole command line, not a single
+      // path, so protected-path patterns (which require a path boundary)
+      // won't match against the full string — check each token instead.
+      for (const token of action.target.split(/\s+/)) {
+        const protected_ = this.redactor.isProtectedPath(token);
+        if (protected_.protected) {
+          return {
+            verdict: "deny",
+            reason: `Command references protected file: ${protected_.reason}`,
+            requiresApproval: false,
+          };
+        }
+      }
+    }
+
     if (this.config.allowShellCommands === "approval-required") {
       return { verdict: "ask", requiresApproval: true, reason: "Shell command requires approval" };
     }

@@ -326,9 +326,15 @@ const layer = Layer.effect(
       }
 
       const agent = yield* agents.get("compaction")
+      // Compaction summarizes old turns — it doesn't need the conversation's
+      // main (often premium) model. Prefer an explicit agent override, then
+      // the configured/provider small model, and only fall back to the main
+      // model if neither is available. Mirrors title generation's resolution
+      // order in session/prompt.ts.
       const model = agent.model
         ? yield* provider.getModel(agent.model.providerID, agent.model.modelID).pipe(Effect.orDie)
-        : yield* provider.getModel(userMessage.model.providerID, userMessage.model.modelID).pipe(Effect.orDie)
+        : ((yield* provider.getSmallModel(userMessage.model.providerID)) ??
+          (yield* provider.getModel(userMessage.model.providerID, userMessage.model.modelID).pipe(Effect.orDie)))
       const cfg = yield* config.get()
       const history = compactionPart && messages.at(-1)?.info.id === input.parentID ? messages.slice(0, -1) : messages
       const prior = completedCompactions(history)

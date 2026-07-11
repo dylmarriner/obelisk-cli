@@ -1,5 +1,5 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
@@ -26,24 +26,24 @@ const SemanticStatusCommand = effectCmd({
   handler: Effect.fn("Cli.semantic.status")(function* () {
     const adapter = new SerenaMcpAdapter()
 
-    Console.log("")
-    Console.log("  Checking Serena MCP server...")
-    Console.log("")
+    console.log("")
+    console.log("  Checking Serena MCP server...")
+    console.log("")
 
     const status = yield* Effect.promise(() => adapter.status())
 
     if (status.available) {
-      Console.log(`  ✓ Serena is available`)
-      if (status.version) Console.log(`    Version: ${status.version}`)
-      if (status.project) Console.log(`    Project: ${status.project}`)
-      Console.log("")
+      console.log(`  ✓ Serena is available`)
+      if (status.version) console.log(`    Version: ${status.version}`)
+      if (status.project) console.log(`    Project: ${status.project}`)
+      console.log("")
     } else {
-      Console.log(`  ✗ Serena is not available`)
-      if (status.error) Console.log(`    ${status.error}`)
-      Console.log("")
-      Console.log("  To install Serena:")
-      Console.log("    uvx serena-agent start-mcp-server")
-      Console.log("")
+      console.log(`  ✗ Serena is not available`)
+      if (status.error) console.log(`    ${status.error}`)
+      console.log("")
+      console.log("  To install Serena:")
+      console.log("    uvx serena-agent start-mcp-server")
+      console.log("")
     }
   }),
 })
@@ -66,23 +66,23 @@ const SemanticSymbolsCommand = effectCmd({
   handler: Effect.fn("Cli.semantic.symbols")(function* (args) {
     const adapter = new SerenaMcpAdapter()
 
-    Console.log("")
-    Console.log(`  Fetching symbols${args.file ? ` for ${args.file}` : "..."}`)
-    Console.log("")
+    console.log("")
+    console.log(`  Fetching symbols${args.file ? ` for ${args.file}` : "..."}`)
+    console.log("")
 
     try {
       const symbols = yield* Effect.promise(() =>
-        adapter.listSymbols({ file: args.file, depth: args.depth })
+        adapter.listSymbols({ file: args.file!, depth: args.depth })
       )
 
       if (symbols.length === 0) {
-        Console.log("  No symbols found.")
-        Console.log("")
+        console.log("  No symbols found.")
+        console.log("")
         return
       }
 
-      Console.log(`  Found ${symbols.length} symbol(s):`)
-      Console.log("")
+      console.log(`  Found ${symbols.length} symbol(s):`)
+      console.log("")
 
       for (const sym of symbols.slice(0, 40)) {
         const loc = sym.file ? ` ${sym.file}:${sym.line}:${sym.column}` : ` ${sym.line}:${sym.column}`
@@ -90,12 +90,12 @@ const SemanticSymbolsCommand = effectCmd({
       }
 
       if (symbols.length > 40) {
-        Console.log(`  ... and ${symbols.length - 40} more symbols`)
+        console.log(`  ... and ${symbols.length - 40} more symbols`)
       }
-      Console.log("")
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -123,28 +123,28 @@ const SemanticFindSymbolCommand = effectCmd({
   handler: Effect.fn("Cli.semantic.find-symbol")(function* (args) {
     const adapter = new SerenaMcpAdapter()
 
-    Console.log("")
-    Console.log(`  Searching for symbol "${args.name}"...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Searching for symbol "${args.name}"...`)
+    console.log("")
 
     try {
       const symbols = yield* Effect.promise(() =>
         adapter.findSymbol({
-          name: args.name,
-          file: args.file,
+          name: args.name!,
+          file: args.file!,
           includeBody: args.body,
           includeInfo: true,
         })
       )
 
       if (symbols.length === 0) {
-        Console.log("  No matching symbols found.")
-        Console.log("")
+        console.log("  No matching symbols found.")
+        console.log("")
         return
       }
 
-      Console.log(`  Found ${symbols.length} symbol(s):`)
-      Console.log("")
+      console.log(`  Found ${symbols.length} symbol(s):`)
+      console.log("")
 
       for (const sym of symbols.slice(0, 15)) {
         console.log(`    ${sym.kind}  ${sym.name}`)
@@ -158,12 +158,12 @@ const SemanticFindSymbolCommand = effectCmd({
       }
 
       if (symbols.length > 15) {
-        Console.log(`  ... and ${symbols.length - 15} more results`)
-        Console.log("")
+        console.log(`  ... and ${symbols.length - 15} more results`)
+        console.log("")
       }
     } catch (err) {
-      Console.log(`  ✗ Search failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Search failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -185,23 +185,23 @@ const SemanticRefsCommand = effectCmd({
   handler: Effect.fn("Cli.semantic.refs")(function* (args) {
     const adapter = new SerenaMcpAdapter()
 
-    Console.log("")
-    Console.log(`  Finding references to "${args.name}" in ${args.file}...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Finding references to "${args.name}" in ${args.file}...`)
+    console.log("")
 
     try {
       const refs = yield* Effect.promise(() =>
-        adapter.findReferences({ name: args.name, file: args.file })
+        adapter.findReferences({ name: args.name!, file: args.file! })
       )
 
       if (refs.length === 0) {
-        Console.log("  No references found.")
-        Console.log("")
+        console.log("  No references found.")
+        console.log("")
         return
       }
 
-      Console.log(`  Found ${refs.length} reference(s):`)
-      Console.log("")
+      console.log(`  Found ${refs.length} reference(s):`)
+      console.log("")
 
       for (const ref of refs.slice(0, 30)) {
         console.log(`    ${ref.file}:${ref.line}:${ref.column}`)
@@ -210,12 +210,12 @@ const SemanticRefsCommand = effectCmd({
       }
 
       if (refs.length > 30) {
-        Console.log(`  ... and ${refs.length - 30} more references`)
-        Console.log("")
+        console.log(`  ... and ${refs.length - 30} more references`)
+        console.log("")
       }
     } catch (err) {
-      Console.log(`  ✗ Search failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Search failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -229,35 +229,38 @@ const SemanticRenameCommand = effectCmd({
       .positional("name", {
         type: "string",
         describe: "current symbol name",
+        demandOption: true,
       })
       .positional("file", {
         type: "string",
         describe: "file containing the symbol",
+        demandOption: true,
       })
       .positional("new-name", {
         type: "string",
         describe: "new symbol name",
+        demandOption: true,
       }),
   handler: Effect.fn("Cli.semantic.rename")(function* (args) {
     const adapter = new SerenaMcpAdapter()
 
-    Console.log("")
-    Console.log(`  Preparing rename of "${args.name}" → "${args.newName}"...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Preparing rename of "${args.name}" → "${args["new-name"]}"...`)
+    console.log("")
 
     try {
       const plan = yield* Effect.promise(() =>
-        adapter.prepareRename({ name: args.name, file: args.file, newName: args.newName })
+        adapter.prepareRename({ name: args.name!, file: args.file!, newName: args["new-name"] })
       )
 
       if (plan.changes.length === 0) {
-        Console.log("  No references found — rename is safe.")
-        Console.log("")
+        console.log("  No references found — rename is safe.")
+        console.log("")
         return
       }
 
-      Console.log(`  ${plan.summary}`)
-      Console.log("")
+      console.log(`  ${plan.summary}`)
+      console.log("")
 
       const uniqueFiles = new Set(plan.changes.map((c) => c.file))
       console.log(`    Files affected: ${uniqueFiles.size}`)
@@ -271,12 +274,12 @@ const SemanticRenameCommand = effectCmd({
       }
 
       if (plan.changes.length > 10) {
-        Console.log(`  ... and ${plan.changes.length - 10} more changes`)
-        Console.log("")
+        console.log(`  ... and ${plan.changes.length - 10} more changes`)
+        console.log("")
       }
     } catch (err) {
-      Console.log(`  ✗ Rename preview failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Rename preview failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })

@@ -1,13 +1,13 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
-import { cmd } from "./cmd"
 import type { Argv } from "yargs"
 import { AgentOrchestrator } from "@obelisk-ai/orchestrator"
 
-export const OrchestrateCommand = cmd({
+export const OrchestrateCommand = effectCmd({
   command: "orchestrate <query>",
   describe: "analyze a task and route it through the appropriate tools",
+  instance: false,
   builder: (yargs: Argv) =>
     yargs
       .positional("query", {
@@ -26,26 +26,26 @@ export const OrchestrateCommand = cmd({
       }),
   handler: Effect.fn("Cli.orchestrate")(function* (args) {
     const orchestrator = new AgentOrchestrator()
-    const query = args.query
-    const dryRun = args.dryRun
+    const query = args.query!
+    const dryRun = args["dry-run"]
     const verbose = args.verbose
 
     // Step 1: Analyze
-    Console.log("")
-    Console.log(`  Analyzing: "${query}"`)
-    Console.log("")
+    console.log("")
+    console.log(`  Analyzing: "${query}"`)
+    console.log("")
 
-    const { classification, plan } = orchestrator.analyze(query)
+    const { classification, plan } = orchestrator.analyze(query!)
 
-    Console.log(`  Classification: ${classification.taskType}`)
-    Console.log(`  Confidence:     ${(classification.confidence * 100).toFixed(0)}%`)
-    Console.log("")
+    console.log(`  Classification: ${classification.taskType}`)
+    console.log(`  Confidence:     ${(classification.confidence * 100).toFixed(0)}%`)
+    console.log("")
 
     // Step 2: Show the plan
-    Console.log("  Execution Plan:")
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  ${plan.description}`)
-    Console.log("")
+    console.log("  Execution Plan:")
+    console.log("  " + "─".repeat(40))
+    console.log(`  ${plan.description}`)
+    console.log("")
 
     for (let i = 0; i < plan.steps.length; i++) {
       const step = plan.steps[i]
@@ -60,30 +60,30 @@ export const OrchestrateCommand = cmd({
         if (paramStr) console.log(paramStr)
       }
     }
-    Console.log("")
+    console.log("")
 
     if (plan.requiresApproval) {
-      Console.log("  ⚠  This plan requires approval before execution.")
-      Console.log("")
+      console.log("  ⚠  This plan requires approval before execution.")
+      console.log("")
     }
 
     if (dryRun) {
-      Console.log("  ── DRY RUN — no actions executed ──")
-      Console.log("")
+      console.log("  ── DRY RUN — no actions executed ──")
+      console.log("")
       return
     }
 
     // Step 3: Execute
-    Console.log("  Executing plan...")
-    Console.log("")
+    console.log("  Executing plan...")
+    console.log("")
 
-    const result = yield* Effect.promise(() => orchestrator.execute(query, { dryRun: false, verbose }))
+    const result = yield* Effect.promise(() => orchestrator.execute(query!, { dryRun: false, verbose }))
 
     // Step 4: Report
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Result: ${result.summary}`)
-    Console.log(`  Duration: ${(result.durationMs / 1000).toFixed(1)}s`)
-    Console.log("")
+    console.log("  " + "─".repeat(40))
+    console.log(`  Result: ${result.summary}`)
+    console.log(`  Duration: ${(result.durationMs / 1000).toFixed(1)}s`)
+    console.log("")
 
     for (const step of result.executed) {
       const icon = step.success ? "✓" : "✗"
@@ -92,6 +92,6 @@ export const OrchestrateCommand = cmd({
         console.log(`       ${step.output.substring(0, 120)}`)
       }
     }
-    Console.log("")
+    console.log("")
   }),
 })

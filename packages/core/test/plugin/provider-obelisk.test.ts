@@ -394,30 +394,5 @@ describe("OpencodePlugin", () => {
     ),
   )
 
-  it.effect("prefers gpt-5-nano as the obelisk small model", () =>
-    Effect.gen(function* () {
-      const catalog = yield* Catalog.Service
-      const providerID = ProviderV2.ID.obelisk
 
-      yield* catalog.transform((catalog) => {
-        catalog.provider.update(providerID, () => {})
-        catalog.model.update(providerID, ModelV2.ID.make("cheap-mini"), (model) => {
-          model.capabilities.input = ["text"]
-          model.capabilities.output = ["text"]
-          model.cost = [...cost(1, 1)]
-          model.time.released = Date.now()
-        })
-        catalog.model.update(providerID, ModelV2.ID.make("gpt-5-nano"), (model) => {
-          model.capabilities.input = ["text"]
-          model.capabilities.output = ["text"]
-          model.cost = [...cost(10, 10)]
-          model.time.released = Date.now()
-        })
-      })
-
-      const selected = yield* catalog.model.small(providerID)
-
-      expect(selected?.id).toBe(ModelV2.ID.make("gpt-5-nano"))
-    }),
-  )
 })

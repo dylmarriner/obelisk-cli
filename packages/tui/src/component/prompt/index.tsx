@@ -395,7 +395,6 @@ export function Prompt(props: PromptProps) {
         run: () => {
           if (auto()?.visible) return
           if (!input.focused) return
-          // TODO: this should be its own command
           if (store.mode === "shell") {
             setStore("mode", "normal")
             return

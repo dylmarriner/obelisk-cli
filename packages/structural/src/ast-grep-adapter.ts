@@ -31,7 +31,9 @@ import type {
 const execFile = promisify(cp.execFile);
 const writeFile = promisify(fs.writeFile);
 
-const SG_BINARY = "sg";
+// Use "ast-grep", not the "sg" alias binary — "sg" collides with the
+// system "sg" (set group ID) utility on most Linux distros.
+const SG_BINARY = "ast-grep";
 
 // ─── Adapter ─────────────────────────────────────────────────────
 
@@ -69,7 +71,7 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
       const { stdout, stderr } = await execFile(this.binary, args, {
         maxBuffer: 10 * 1024 * 1024,
         timeout: 30000,
-        cwd: input.repoPath || process.cwd(),
+        cwd: process.cwd(),
       });
 
       if (stderr && stderr.includes("error")) {
@@ -85,7 +87,7 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
       }
       // If JSON output fails, try parsing text output
       if (err.stdout) {
-        return this.parseTextResults(err.stdout as string);
+        return this.parseFindResults(err.stdout as string);
       }
       throw err;
     }
@@ -134,6 +136,9 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
     // For ast-grep, we need to re-run with --rewrite flag
     // The previewId stores the original pattern and rewrite params
     const [pattern, rewrite, lang, ...paths] = input.previewId.split("|");
+    if (!pattern || !rewrite || !lang) {
+      throw new Error(`Invalid previewId: ${input.previewId}`);
+    }
     const repoPath = paths.join("|") || process.cwd();
 
     const args: string[] = [
@@ -152,7 +157,7 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
       const { stdout, stderr } = await execFile(this.binary, args, {
         maxBuffer: 10 * 1024 * 1024,
         timeout: 60000,
-        cwd: repoPath,
+        cwd: process.cwd(),
       });
 
       // Count changes from output
@@ -195,7 +200,7 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
       const { stdout } = await execFile(this.binary, args, {
         maxBuffer: 10 * 1024 * 1024,
         timeout: 60000,
-        cwd: input.repoPath || process.cwd(),
+        cwd: process.cwd(),
       });
 
       return this.parseScanResults(stdout);
@@ -234,12 +239,20 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
       const parsed = JSON.parse(output);
       if (Array.isArray(parsed)) {
         for (const item of parsed) {
+          const single = item.metaVariables?.single || {};
+          const variables: Record<string, string> = {};
+          for (const [name, meta] of Object.entries(single)) {
+            variables[name] = (meta as { text?: string })?.text ?? "";
+          }
+
           results.push({
             file: item.file || item.path || "",
-            line: item.line || item.start?.line || 0,
-            column: item.column || item.start?.column || 0,
+            // ast-grep's --json output nests position under range.start and
+            // is 0-indexed; StructuralMatch line/column are 1-indexed.
+            line: item.line ?? (item.range?.start?.line ?? item.start?.line ?? -1) + 1,
+            column: item.column ?? (item.range?.start?.column ?? item.start?.column ?? -1) + 1,
             content: item.text || item.content || "",
-            variables: item.variables || {},
+            variables: item.variables || variables,
           });
         }
         return results;
@@ -253,10 +266,10 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
       const match = line.match(/^([^:]+):(\d+):(\d+):(.+)/);
       if (match) {
         results.push({
-          file: match[1],
-          line: parseInt(match[2], 10),
-          column: parseInt(match[3], 10),
-          content: match[4].trim(),
+          file: match[1]!,
+          line: parseInt(match[2]!, 10),
+          column: parseInt(match[3]!, 10),
+          content: match[4]!.trim(),
           variables: {},
         });
       }
@@ -274,8 +287,10 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
         for (const item of parsed) {
           issues.push({
             file: item.file || item.path || "",
-            line: item.line || item.start?.line || 0,
-            column: item.column || item.start?.column || 0,
+            // ast-grep's --json output nests position under range.start and
+            // is 0-indexed; StructuralIssue line/column are 1-indexed.
+            line: item.line ?? (item.range?.start?.line ?? item.start?.line ?? -1) + 1,
+            column: item.column ?? (item.range?.start?.column ?? item.start?.column ?? -1) + 1,
             message: item.message || item.rule?.message || "",
             severity: item.severity || "warning",
           });
@@ -287,10 +302,10 @@ export class AstGrepAdapter implements StructuralRefactorAdapter {
         const match = line.match(/^([^:]+):(\d+):(\d+):(.+)/);
         if (match) {
           issues.push({
-            file: match[1],
-            line: parseInt(match[2], 10),
-            column: parseInt(match[3], 10),
-            message: match[4].trim(),
+            file: match[1]!,
+            line: parseInt(match[2]!, 10),
+            column: parseInt(match[3]!, 10),
+            message: match[4]!.trim(),
             severity: "warning",
           });
         }

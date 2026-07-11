@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect"
 import * as path from "path"
+import { createTwoFilesPatch } from "diff"
 import { FSUtil } from "@obelisk-ai/core/fs-util"
 import * as Bom from "../util/bom"
 
@@ -330,7 +331,7 @@ export function deriveNewContentsFromChunks(
   const newContent = next.text
 
   // Generate unified diff
-  const unifiedDiff = generateUnifiedDiff(originalContent.text, newContent)
+  const unifiedDiff = createTwoFilesPatch(filePath, filePath, originalContent.text, newContent)
 
   return {
     unified_diff: unifiedDiff,
@@ -481,33 +482,6 @@ function seekSequence(lines: string[], pattern: string[], startIndex: number, eo
     eof,
   )
   return normalized
-}
-
-function generateUnifiedDiff(oldContent: string, newContent: string): string {
-  const oldLines = oldContent.split("\n")
-  const newLines = newContent.split("\n")
-
-  // Simple diff generation - in a real implementation you'd use a proper diff algorithm
-  let diff = "@@ -1 +1 @@\n"
-
-  // Find changes (simplified approach)
-  const maxLen = Math.max(oldLines.length, newLines.length)
-  let hasChanges = false
-
-  for (let i = 0; i < maxLen; i++) {
-    const oldLine = oldLines[i] || ""
-    const newLine = newLines[i] || ""
-
-    if (oldLine !== newLine) {
-      if (oldLine) diff += `-${oldLine}\n`
-      if (newLine) diff += `+${newLine}\n`
-      hasChanges = true
-    } else if (oldLine) {
-      diff += ` ${oldLine}\n`
-    }
-  }
-
-  return hasChanges ? diff : ""
 }
 
 // Apply hunks to filesystem

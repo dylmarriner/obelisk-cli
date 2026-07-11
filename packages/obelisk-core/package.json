@@ -12,5 +12,10 @@
     "./policy": "./src/policy-engine.ts",
     "./prompt": "./src/prompt-assembler.ts",
     "./redact": "./src/secret-redactor.ts"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:"
   }
 }

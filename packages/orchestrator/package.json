@@ -15,5 +15,10 @@
     "@obelisk-ai/search": "workspace:*",
     "@obelisk-ai/semantic": "workspace:*",
     "@obelisk-ai/structural": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:"
   }
 }

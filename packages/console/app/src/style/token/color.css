@@ -1,43 +1,51 @@
+/*
+ * Obelisk — Firelight on Obsidian.
+ * Shared palette with the TUI theme (packages/tui/src/theme/assets/obelisk.json):
+ * a carved monolith lit by molten gold, inlaid with ancient gemstone —
+ * carnelian, malachite, lapis lazuli, verdigris bronze. Light mode is aged
+ * papyrus and espresso ink. Keep these two files in sync.
+ */
 :root {
   --color-white: #ffffff;
   --color-black: #000000;
 
-  /* Default light theme colors */
-  --color-bg: #ffffff;
-  --color-bg-surface: #f5f5f7;
-  --color-bg-elevated: #ffffff;
+  /* Light theme — aged papyrus & espresso ink */
+  --color-bg: #f7f1e6;
+  --color-bg-surface: #f1e8d8;
+  --color-bg-elevated: #fdfaf3;
 
-  --color-text: #1d1d1f;
-  --color-text-secondary: #424245;
-  --color-text-muted: #6e6e73;
-  --color-text-disabled: #86868b;
+  --color-text: #241c12;
+  --color-text-secondary: #4a3f30;
+  --color-text-muted: #77664f;
+  --color-text-disabled: #9c8a70;
 
-  --color-accent: #007aff;
-  --color-accent-hover: #0056b3;
-  --color-accent-active: #004085;
+  /* Accent — bronze-gold (gilded firelight, darkened to read on papyrus) */
+  --color-accent: #9a6413;
+  --color-accent-hover: #82520d;
+  --color-accent-active: #6b430a;
 
-  --color-success: #30d158;
-  --color-warning: #ff9f0a;
-  --color-danger: #ff3b30;
+  --color-success: #1f8560;
+  --color-warning: #b5641b;
+  --color-danger: #bd3038;
 
-  --color-border: #d2d2d7;
-  --color-border-muted: #e5e5ea;
+  --color-border: #c3ae8c;
+  --color-border-muted: #ded0b6;
 
   /* Button colors */
   --color-primary: var(--color-accent);
   --color-primary-hover: var(--color-accent-hover);
   --color-primary-active: var(--color-accent-active);
-  --color-primary-text: #ffffff;
+  --color-primary-text: #fdf7ec;
 
-  --color-danger: #ff3b30;
-  --color-danger-hover: #d70015;
-  --color-danger-active: #a50011;
-  --color-danger-text: #ffffff;
+  --color-danger: #bd3038;
+  --color-danger-hover: #a5292f;
+  --color-danger-active: #8c2228;
+  --color-danger-text: #fdf7ec;
 
-  --color-warning: #ff9f0a;
-  --color-warning-hover: #cc7f08;
-  --color-warning-active: #995f06;
-  --color-warning-text: #000000;
+  --color-warning: #b5641b;
+  --color-warning-hover: #995317;
+  --color-warning-active: #7d4312;
+  --color-warning-text: #fdf7ec;
 
   /* Surface colors */
   --color-surface: var(--color-bg-surface);
@@ -47,41 +55,43 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #0c0c0e;
-    --color-bg-surface: #161618;
-    --color-bg-elevated: #1c1c1f;
+    /* Dark theme — molten gold on warm obsidian */
+    --color-bg: #0a0908;
+    --color-bg-surface: #12100e;
+    --color-bg-elevated: #1a1613;
 
-    --color-text: #ffffff;
-    --color-text-secondary: #c7c7cc;
-    --color-text-muted: #a1a1a6;
-    --color-text-disabled: #68686f;
+    --color-text: #f5ece0;
+    --color-text-secondary: #cdbba4;
+    --color-text-muted: #a5917c;
+    --color-text-disabled: #6f6252;
 
-    --color-accent: #007aff;
-    --color-accent-hover: #0056b3;
-    --color-accent-active: #004085;
+    /* Accent — molten gold (the signature firelight) */
+    --color-accent: #e3a839;
+    --color-accent-hover: #f4c05a;
+    --color-accent-active: #c9902b;
 
-    --color-success: #30d158;
-    --color-warning: #ff9f0a;
-    --color-danger: #ff453a;
+    --color-success: #55c79b;
+    --color-warning: #f4823f;
+    --color-danger: #e14b57;
 
-    --color-border: #38383a;
-    --color-border-muted: #2c2c2e;
+    --color-border: #453931;
+    --color-border-muted: #2b241f;
 
     /* Button colors */
     --color-primary: var(--color-accent);
     --color-primary-hover: var(--color-accent-hover);
     --color-primary-active: var(--color-accent-active);
-    --color-primary-text: #ffffff;
+    --color-primary-text: #0a0908;
 
-    --color-danger: #ff453a;
-    --color-danger-hover: #d70015;
-    --color-danger-active: #a50011;
-    --color-danger-text: #ffffff;
+    --color-danger: #e14b57;
+    --color-danger-hover: #c93b46;
+    --color-danger-active: #a92d38;
+    --color-danger-text: #f5ece0;
 
-    --color-warning: #ff9f0a;
-    --color-warning-hover: #cc7f08;
-    --color-warning-active: #995f06;
-    --color-warning-text: #000000;
+    --color-warning: #f4823f;
+    --color-warning-hover: #d96f30;
+    --color-warning-active: #b85a24;
+    --color-warning-text: #0a0908;
 
     /* Surface colors */
     --color-surface: var(--color-bg-surface);

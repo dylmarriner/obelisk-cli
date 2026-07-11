@@ -42,6 +42,12 @@ import { ConfigCommand } from "./cli/cmd/config"
 import { errorMessage } from "./util/error"
 import { PluginCommand } from "./cli/cmd/plug"
 import { Heap } from "./cli/heap"
+import { AutoScheduler } from "@obelisk-ai/self-improve"
+
+// No-op unless `obelisk self-improve enable` has been run for this repo —
+// the background timer itself is always started, but every tick checks
+// the persisted enabled-flag before doing anything.
+AutoScheduler.start()
 
 const args = hideBin(process.argv)
 

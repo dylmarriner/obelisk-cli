@@ -25,7 +25,7 @@ export interface PromptAssemblyInput {
 
 export interface PromptAssemblyResult {
   prompt: string;
-  sources: { name: string; included: boolean; tokens: number }[];
+  sources: { name: string; included: boolean; tokens: number; note?: string }[];
   report: TokenBudgetReport;
   omitted: string[];
 }
@@ -62,13 +62,12 @@ export class PromptAssembler {
     }));
 
     // Greedy inclusion by priority
-    const included: { name: string; included: boolean; tokens: number }[] = [];
+    const included: { name: string; included: boolean; tokens: number; note?: string }[] = [];
     let usedTokens = 0;
     const parts: string[] = [];
 
-    for (let i = 0; i < sorted.length; i++) {
-      const source = sorted[i];
-      const estimated = tokenSources[i].tokens;
+    for (const [i, source] of sorted.entries()) {
+      const estimated = tokenSources[i]!.tokens;
 
       if (usedTokens + estimated <= maxTokens || parts.length === 0) {
         // Include

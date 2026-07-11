@@ -59,7 +59,9 @@ const layer = Layer.effect(
       if (process.env.OBELISK_AUTH_CONTENT) {
         try {
           return JSON.parse(process.env.OBELISK_AUTH_CONTENT)
-        } catch (err) {}
+        } catch (err) {
+          yield* Effect.logWarning("failed to parse OBELISK_AUTH_CONTENT, falling back to auth file", err)
+        }
       }
 
       const data = (yield* fsys.readJson(file).pipe(Effect.orElseSucceed(() => ({})))) as Record<string, unknown>

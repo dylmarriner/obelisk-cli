@@ -35,6 +35,28 @@ import { isMedia } from "@/util/media"
 import type { SystemError } from "bun"
 import type { Provider } from "@/provider/provider"
 import { Effect, Schema } from "effect"
+import { InputOptimizer, SAFE_OPTIONS } from "@obelisk-ai/obelisk-core"
+
+// Applied once per stored message part, every time history is converted to
+// the outgoing request. Since a given part's text never changes once
+// persisted, this is deterministic per-message and does not disturb prompt
+// caching — the same historical message always compresses to the same
+// bytes, so the cached prefix stays stable across calls. SAFE_OPTIONS only
+// strips noise (ANSI, progress bars, huge blobs, blank-line runs, mild
+// filler) — it never rewrites code or alters meaningful content.
+// `reversible: false` because chat history isn't meant to be restorable
+// via `obelisk optimize restore`; skip the blob-store write entirely.
+const inputOptimizer = new InputOptimizer({ ...SAFE_OPTIONS, reversible: false })
+const INPUT_OPTIMIZE_THRESHOLD = 2000
+
+function optimizeUserText(text: string): string {
+  if (text.length < INPUT_OPTIMIZE_THRESHOLD) return text
+  try {
+    return inputOptimizer.optimize(text).text
+  } catch {
+    return text
+  }
+}
 
 /** Error shape thrown by Bun's fetch() when gzip/br decompression fails mid-stream */
 interface FetchDecompressionError extends Error {
@@ -206,7 +228,7 @@ export const toModelMessagesEffect = Effect.fnUntraced(function* (
         if (part.type === "text" && !part.ignored && part.text !== "")
           userMessage.parts.push({
             type: "text",
-            text: part.text,
+            text: optimizeUserText(part.text),
           })
         // text/plain and directory files are converted into text parts, ignore them
         if (part.type === "file" && part.mime !== "text/plain" && part.mime !== "application/x-directory") {

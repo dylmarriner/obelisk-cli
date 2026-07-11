@@ -11,8 +11,11 @@ import { ConfigFormatterV1 } from "./formatter"
 import { ConfigLayoutV1 } from "./layout"
 import { ConfigLSPV1 } from "./lsp"
 import { ConfigMCPV1 } from "./mcp"
+import { ConfigNexusV1 } from "./nexus"
+import { ConfigObeliskSettingsV1 } from "./obelisk-settings"
 import { ConfigPermissionV1 } from "./permission"
 import { ConfigPluginV1 } from "./plugin"
+import { ConfigProjectV1 } from "./project"
 import { ConfigProviderV1 } from "./provider"
 import { ConfigServerV1 } from "./server"
 import { ConfigSkillsV1 } from "./skills"
@@ -123,7 +126,11 @@ export const Info = Schema.Struct({
   }),
   layout: Schema.optional(ConfigLayoutV1.Layout).annotate({ description: "@deprecated Always uses stretch layout." }),
   permission: Schema.optional(ConfigPermissionV1.Info),
-  tools: Schema.optional(Schema.Record(Schema.String, Schema.Boolean)),
+  tools: Schema.optional(
+    Schema.Record(Schema.String, Schema.Union([Schema.Boolean, ConfigObeliskSettingsV1.ToolIntegration])),
+  ).annotate({
+    description: "Enable/disable tools by name, or provide a richer tool-integration definition",
+  }),
   attachment: Schema.optional(ConfigAttachmentV1.Info).annotate({
     description: "Attachment processing configuration, including image size limits and resizing behavior",
   }),
@@ -184,6 +191,16 @@ export const Info = Schema.Struct({
       }),
     }),
   ),
+  project: Schema.optional(ConfigProjectV1.Info).annotate({ description: "Project-level metadata" }),
+  nexus: Schema.optional(ConfigNexusV1.Info).annotate({
+    description: "Nexus durable-memory server integration",
+  }),
+  obelisk: Schema.optional(ConfigObeliskSettingsV1.Info).annotate({
+    description: "Obelisk-specific token budget and policy settings",
+  }),
+  models: Schema.optional(ConfigObeliskSettingsV1.Models).annotate({
+    description: "Named model shortcuts (default/fast/cheap/local) and their provider credentials",
+  }),
 }).annotate({ identifier: "Config" })
 
 export type Info = DeepMutable<Schema.Schema.Type<typeof Info>>

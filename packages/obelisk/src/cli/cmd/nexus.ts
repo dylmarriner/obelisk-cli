@@ -1,5 +1,5 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
@@ -32,27 +32,27 @@ const NexusHealthCommand = effectCmd({
     const endpoint = args.endpoint || DEFAULT_NEXUS_CONFIG.endpoint
     const adapter = createAdapter(endpoint)
 
-    Console.log("")
-    Console.log(`  Checking Nexus health at ${endpoint}...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Checking Nexus health at ${endpoint}...`)
+    console.log("")
 
     try {
       const health = yield* Effect.promise(() => adapter.health())
-      Console.log(`  ✓ Nexus is healthy`)
-      Console.log(`    Service: ${health.service}`)
-      Console.log(`    Version: ${health.version}`)
-      Console.log(`    Storage: ${health.storage}`)
-      Console.log("")
+      console.log(`  ✓ Nexus is healthy`)
+      console.log(`    Service: ${health.service}`)
+      console.log(`    Version: ${health.version}`)
+      console.log(`    Storage: ${health.storage}`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Nexus is unreachable:`)
-      Console.log(`    ${(err as Error).message}`)
-      Console.log("")
-      Console.log("  Possible causes:")
-      Console.log("    - Tailscale not connected")
-      Console.log("    - Nexus server not running on the Pi")
-      Console.log("    - Wrong endpoint or port")
-      Console.log("    - NEXUS_API_KEY not set in environment")
-      Console.log("")
+      console.log(`  ✗ Nexus is unreachable:`)
+      console.log(`    ${(err as Error).message}`)
+      console.log("")
+      console.log("  Possible causes:")
+      console.log("    - Tailscale not connected")
+      console.log("    - Nexus server not running on the Pi")
+      console.log("    - Wrong endpoint or port")
+      console.log("    - NEXUS_API_KEY not set in environment")
+      console.log("")
     }
   }),
 })
@@ -72,9 +72,9 @@ const NexusPingCommand = effectCmd({
 
     const result = yield* Effect.promise(() => adapter.ping())
     if (result.ok) {
-      Console.log(`  ✓ Nexus reachable at ${endpoint} (${result.latencyMs}ms)`)
+      console.log(`  ✓ Nexus reachable at ${endpoint} (${result.latencyMs}ms)`)
     } else {
-      Console.log(`  ✗ Nexus unreachable at ${endpoint}`)
+      console.log(`  ✗ Nexus unreachable at ${endpoint}`)
     }
   }),
 })
@@ -87,15 +87,15 @@ const NexusConfigCommand = effectCmd({
     const endpoint = process.env.NEXUS_ENDPOINT || DEFAULT_NEXUS_CONFIG.endpoint
     const apiKey = process.env.NEXUS_API_KEY ? "*** set ***" : "*** not set ***"
 
-    Console.log("")
-    Console.log("  Nexus Configuration")
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Endpoint:    ${endpoint}`)
-    Console.log(`  API Key:     ${apiKey}`)
-    Console.log(`  Timeout:     ${DEFAULT_NEXUS_CONFIG.timeoutMs}ms`)
-    Console.log(`  Retries:     ${DEFAULT_NEXUS_CONFIG.retries}`)
-    Console.log(`  Cache:       ${DEFAULT_NEXUS_CONFIG.offlineCachePath}`)
-    Console.log("")
+    console.log("")
+    console.log("  Nexus Configuration")
+    console.log("  " + "─".repeat(40))
+    console.log(`  Endpoint:    ${endpoint}`)
+    console.log(`  API Key:     ${apiKey}`)
+    console.log(`  Timeout:     ${DEFAULT_NEXUS_CONFIG.timeoutMs}ms`)
+    console.log(`  Retries:     ${DEFAULT_NEXUS_CONFIG.retries}`)
+    console.log(`  Cache:       ${DEFAULT_NEXUS_CONFIG.offlineCachePath}`)
+    console.log("")
   }),
 })
 
@@ -112,27 +112,27 @@ const NexusSyncCommand = effectCmd({
     const endpoint = args.endpoint || DEFAULT_NEXUS_CONFIG.endpoint
     const adapter = createAdapter(endpoint)
 
-    Console.log("")
-    Console.log("  Syncing offline memory queue...")
-    Console.log("")
+    console.log("")
+    console.log("  Syncing offline memory queue...")
+    console.log("")
 
     const result = yield* Effect.promise(() => adapter.syncOfflineQueue())
 
     if (result.synced > 0) {
-      Console.log(`  ✓ Synced ${result.synced} queued memory writes`)
+      console.log(`  ✓ Synced ${result.synced} queued memory writes`)
     } else {
-      Console.log("  No queued writes to sync")
+      console.log("  No queued writes to sync")
     }
 
     if (result.remaining > 0) {
-      Console.log(`  ⚠ ${result.remaining} writes remaining`)
+      console.log(`  ⚠ ${result.remaining} writes remaining`)
     }
     if (result.errors?.length) {
       for (const err of result.errors) {
-        Console.log(`  ✗ ${err}`)
+        console.log(`  ✗ ${err}`)
       }
     }
-    Console.log("")
+    console.log("")
   }),
 })
 
@@ -156,9 +156,9 @@ const NexusTestWriteCommand = effectCmd({
     const adapter = createAdapter(endpoint)
     const content = args.content
 
-    Console.log("")
-    Console.log(`  Writing test memory to ${endpoint}...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Writing test memory to ${endpoint}...`)
+    console.log("")
 
     try {
       const record = yield* Effect.promise(() =>
@@ -170,19 +170,19 @@ const NexusTestWriteCommand = effectCmd({
           sensitivity: "normal",
         }),
       )
-      Console.log(`  ✓ Written: ${record.id}`)
-      Console.log(`    Status: ${(record as any).status || "persisted"}`)
-      Console.log("")
+      console.log(`  ✓ Written: ${record.id}`)
+      console.log(`    Status: ${(record as any).status || "persisted"}`)
+      console.log("")
 
       // Verify by reading back
       const fetched = yield* Effect.promise(() => adapter.get(record.id))
       if (fetched) {
-        Console.log(`  ✓ Verified: read back successfully`)
-        Console.log("")
+        console.log(`  ✓ Verified: read back successfully`)
+        console.log("")
       }
     } catch (err) {
-      Console.log(`  ✗ Write failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Write failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })

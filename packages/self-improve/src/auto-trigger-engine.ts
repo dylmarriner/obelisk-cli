@@ -171,16 +171,16 @@ export class AutoTriggerEngine {
       const metaMatch = content.match(/^---\n([\s\S]*?)\n---/);
       if (!metaMatch) return null;
 
-      const meta = metaMatch[1];
+      const meta = metaMatch[1]!;
       const name = meta.match(/^name:\s*(.+)$/m)?.[1] || "";
       const desc = meta.match(/^description:\s*(.+)$/m)?.[1] || "";
       const triggersMatch = meta.match(/^triggers:\n((?:\s+- .+\n?)*)/m);
       const triggers = triggersMatch
-        ? triggersMatch[1].split("\n").map((l) => l.trim().replace(/^- /, "")).filter(Boolean)
+        ? triggersMatch[1]!.split("\n").map((l) => l.trim().replace(/^- /, "")).filter(Boolean)
         : [];
       const tagsMatch = meta.match(/^tags:\n((?:\s+- .+\n?)*)/m);
       const tags = tagsMatch
-        ? tagsMatch[1].split("\n").map((l) => l.trim().replace(/^- /, "")).filter(Boolean)
+        ? tagsMatch[1]!.split("\n").map((l) => l.trim().replace(/^- /, "")).filter(Boolean)
         : [];
 
       return { name, description: desc, triggers, tags, filePath };

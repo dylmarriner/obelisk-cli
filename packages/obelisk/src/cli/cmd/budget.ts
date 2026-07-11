@@ -61,15 +61,15 @@ const BudgetInspectCommand = effectCmd({
       sources.push(toSource("stdin", content, args.code))
     }
 
-    Console.log("")
-    Console.log("  Token Budget Configuration")
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Max input tokens:         ${config.maxInputTokens.toLocaleString()}`)
-    Console.log(`  Reserve output tokens:    ${config.reserveOutputTokens.toLocaleString()}`)
-    Console.log(`  Max tool result tokens:   ${config.maxToolResultTokens.toLocaleString()}`)
-    Console.log(`  Compaction threshold:     ${(config.compactionThreshold * 100).toFixed(0)}%`)
-    Console.log(`  Context policy:           ${config.contextPolicy}`)
-    Console.log("")
+    console.log("")
+    console.log("  Token Budget Configuration")
+    console.log("  " + "─".repeat(40))
+    console.log(`  Max input tokens:         ${config.maxInputTokens.toLocaleString()}`)
+    console.log(`  Reserve output tokens:    ${config.reserveOutputTokens.toLocaleString()}`)
+    console.log(`  Max tool result tokens:   ${config.maxToolResultTokens.toLocaleString()}`)
+    console.log(`  Compaction threshold:     ${(config.compactionThreshold * 100).toFixed(0)}%`)
+    console.log(`  Context policy:           ${config.contextPolicy}`)
+    console.log("")
 
     if (sources.length === 0) {
       Console.log("  No context source supplied.")
@@ -84,13 +84,13 @@ const BudgetInspectCommand = effectCmd({
       const pct = ((src.tokens / config.maxInputTokens) * 100).toFixed(1)
       Console.log(`    ${src.name.padEnd(28)} ${src.tokens.toLocaleString().padStart(8)} tok (${pct}%)`)
     }
-    Console.log("")
-    Console.log(`  Total:     ${report.totalTokens.toLocaleString()}`)
-    Console.log(`  Available: ${report.availableTokens.toLocaleString()}`)
-    Console.log(`  Used:      ${report.usedPercentage.toFixed(1)}%`)
-    Console.log(`  Exceeds:   ${report.exceedsBudget ? "⚠ YES" : "✓ no"}`)
-    Console.log(`  Compact:   ${report.needsCompaction ? "⚠ recommended" : "✓ not needed"}`)
-    Console.log("")
+    console.log("")
+    console.log(`  Total:     ${report.totalTokens.toLocaleString()}`)
+    console.log(`  Available: ${report.availableTokens.toLocaleString()}`)
+    console.log(`  Used:      ${report.usedPercentage.toFixed(1)}%`)
+    console.log(`  Exceeds:   ${report.exceedsBudget ? "⚠ YES" : "✓ no"}`)
+    console.log(`  Compact:   ${report.needsCompaction ? "⚠ recommended" : "✓ not needed"}`)
+    console.log("")
   }),
 })
 
@@ -151,17 +151,17 @@ const BudgetExplainCommand = effectCmd({
     Console.log("")
 
     if (suggestion.recommended) {
-      Console.log(`  Recommendation: ${suggestion.reason}`)
-      Console.log(`  Free up: ${suggestion.estimatedTokensToFree.toLocaleString()} tokens`)
-      Console.log("")
-      Console.log("  Suggested actions:")
+      console.log(`  Recommendation: ${suggestion.reason}`)
+      console.log(`  Free up: ${suggestion.estimatedTokensToFree.toLocaleString()} tokens`)
+      console.log("")
+      console.log("  Suggested actions:")
       for (const action of suggestion.suggestedActions) {
-        Console.log(`    • ${action}`)
+        console.log(`    • ${action}`)
       }
-      Console.log("")
+      console.log("")
     } else {
-      Console.log("  ✓ No compaction needed.")
-      Console.log("")
+      console.log("  ✓ No compaction needed.")
+      console.log("")
     }
   }),
 })
@@ -193,17 +193,17 @@ const BudgetSetCommand = effectCmd({
     const budget = new TokenBudgetManager()
     const updates: string[] = []
 
-    if (args.maxInput) {
-      budget.updateConfig({ maxInputTokens: args.maxInput })
-      updates.push(`maxInputTokens: ${args.maxInput}`)
+    if (args["max-input"]) {
+      budget.updateConfig({ maxInputTokens: args["max-input"] })
+      updates.push(`maxInputTokens: ${args["max-input"]}`)
     }
-    if (args.reserveOutput) {
-      budget.updateConfig({ reserveOutputTokens: args.reserveOutput })
-      updates.push(`reserveOutputTokens: ${args.reserveOutput}`)
+    if (args["reserve-output"]) {
+      budget.updateConfig({ reserveOutputTokens: args["reserve-output"] })
+      updates.push(`reserveOutputTokens: ${args["reserve-output"]}`)
     }
-    if (args.maxToolResult) {
-      budget.updateConfig({ maxToolResultTokens: args.maxToolResult })
-      updates.push(`maxToolResultTokens: ${args.maxToolResult}`)
+    if (args["max-tool-result"]) {
+      budget.updateConfig({ maxToolResultTokens: args["max-tool-result"] })
+      updates.push(`maxToolResultTokens: ${args["max-tool-result"]}`)
     }
     if (args.policy) {
       budget.updateConfig({ contextPolicy: args.policy as any })
@@ -211,15 +211,15 @@ const BudgetSetCommand = effectCmd({
     }
 
     if (updates.length > 0) {
-      Console.log("")
-      Console.log("  Updated budget configuration:")
+      console.log("")
+      console.log("  Updated budget configuration:")
       for (const update of updates) {
-        Console.log(`    ✓ ${update}`)
+        console.log(`    ✓ ${update}`)
       }
-      Console.log("")
-      Console.log("  Note: These changes apply only to the current session.")
-      Console.log("  To persist, update obelisk.config.jsonc.")
-      Console.log("")
+      console.log("")
+      console.log("  Note: These changes apply only to the current session.")
+      console.log("  To persist, update obelisk.config.jsonc.")
+      console.log("")
     }
   }),
 })
@@ -243,14 +243,14 @@ const PolicyShowCommand = effectCmd({
     const policy = new PolicyEngine()
     const summary = policy.getSummary()
 
-    Console.log("")
-    Console.log("  Policy Configuration")
-    Console.log("  " + "─".repeat(40))
+    console.log("")
+    console.log("  Policy Configuration")
+    console.log("  " + "─".repeat(40))
     for (const [key, value] of Object.entries(summary)) {
       const display = typeof value === "boolean" ? (value ? "✓ enabled" : "✗ disabled") : String(value)
-      Console.log(`  ${key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase()).padEnd(35)} ${display}`)
+      console.log(`  ${key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase()).padEnd(35)} ${display}`)
     }
-    Console.log("")
+    console.log("")
   }),
 })
 
@@ -271,16 +271,16 @@ const PolicyTestCommand = effectCmd({
       }),
   handler: Effect.fn("Cli.policy.test")(function* (args) {
     const policy = new PolicyEngine()
-    const action = { type: args.action as any, target: args.target }
+    const action = { type: args.action as any, target: args.target! }
     const result = policy.explain(action)
 
-    Console.log("")
-    Console.log("  Policy Evaluation")
-    Console.log("  " + "─".repeat(40))
+    console.log("")
+    console.log("  Policy Evaluation")
+    console.log("  " + "─".repeat(40))
     for (const line of result.split("\n")) {
-      Console.log(`  ${line}`)
+      console.log(`  ${line}`)
     }
-    Console.log("")
+    console.log("")
   }),
 })
 

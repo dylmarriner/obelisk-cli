@@ -78,7 +78,7 @@ export class AgentOrchestrator {
     }
 
     for (let i = 0; i < plan.steps.length; i++) {
-      const step = plan.steps[i];
+      const step = plan.steps[i]!;
 
       try {
         const output = await this.executeStep(step.tool, step.action, step.params, options);

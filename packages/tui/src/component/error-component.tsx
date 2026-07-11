@@ -13,31 +13,32 @@ export function ErrorComponent(props: { error: Error; reset: () => void; mode?: 
   const clipboard = useClipboard()
   const [copied, setCopied] = createSignal(false)
 
-  // Safe fallback palette per mode (mirrors the Obelisk default theme) since the
-  // theme context may be the thing that crashed.
+  // Safe fallback palette per mode (mirrors the Obelisk default theme —
+  // "Firelight on Obsidian", see packages/tui/src/theme/assets/obelisk.json)
+  // since the theme context may be the thing that crashed.
   const isLight = props.mode === "light"
   const colors = isLight
     ? {
-        bg: "#ffffff",
-        element: "#f5f5f5",
-        borderSubtle: "#d4d4d4",
-        text: "#1a1a1a",
-        muted: "#8a8a8a",
-        primary: "#3b7dd8",
-        onPrimary: "#ffffff",
-        error: "#d1383d",
-        success: "#3d9a57",
+        bg: "#f7f1e6",
+        element: "#e9dcc7",
+        borderSubtle: "#c3ae8c",
+        text: "#241c12",
+        muted: "#77664f",
+        primary: "#9a6413",
+        onPrimary: "#f7f1e6",
+        error: "#bd3038",
+        success: "#1f8560",
       }
     : {
-        bg: "#0a0a0a",
-        element: "#1e1e1e",
-        borderSubtle: "#3c3c3c",
-        text: "#eeeeee",
-        muted: "#808080",
-        primary: "#fab283",
-        onPrimary: "#0a0a0a",
-        error: "#e06c75",
-        success: "#7fd88f",
+        bg: "#0a0908",
+        element: "#1a1613",
+        borderSubtle: "#362d27",
+        text: "#f5ece0",
+        muted: "#a5917c",
+        primary: "#e3a839",
+        onPrimary: "#0a0908",
+        error: "#e14b57",
+        success: "#55c79b",
       }
 
   const message = props.error.message || "An unknown error occurred."

@@ -51,8 +51,10 @@ export function Logo() {
       <For each={logo.left}>
         {(line, index) => (
           <box flexDirection="row" gap={1}>
+            {/* Shadowed stone face on the left, gilded lit face on the right —
+                the monolith catching firelight in the theme's signature gold. */}
             <box flexDirection="row">{renderLine(line, theme.textMuted, false)}</box>
-            <box flexDirection="row">{renderLine(logo.right[index()], theme.text, true)}</box>
+            <box flexDirection="row">{renderLine(logo.right[index()], theme.primary, true)}</box>
           </box>
         )}
       </For>

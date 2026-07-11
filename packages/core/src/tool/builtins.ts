@@ -9,7 +9,10 @@ import { GlobTool } from "./glob"
 import { GrepTool } from "./grep"
 import { QuestionTool } from "./question"
 import { ReadTool } from "./read"
+import { SearchCodeTool } from "./search-code"
+import { SemanticCodeTool } from "./semantic-code"
 import { SkillTool } from "./skill"
+import { StructuralSearchTool } from "./structural-search"
 import { TodoWriteTool } from "./todowrite"
 import { WebFetchTool } from "./webfetch"
 import { WebSearchTool } from "./websearch"
@@ -39,7 +42,10 @@ export const node = makeLocationNode({
     GrepTool.node,
     QuestionTool.node,
     ReadTool.node,
+    SearchCodeTool.node,
+    SemanticCodeTool.node,
     SkillTool.node,
+    StructuralSearchTool.node,
     TodoWriteTool.node,
     WebFetchTool.node,
     WebSearchTool.node,

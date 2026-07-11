@@ -173,7 +173,6 @@ export const githubInstall = Effect.fn("Cli.github.install")(function* () {
 
       const provider = await promptProvider()
       const model = await promptModel()
-      //const key = await promptKey()
 
       await addWorkflowFiles()
       printNextSteps()

@@ -190,7 +190,7 @@ export class ToolRouter {
     lines.push(`Steps: ${plan.steps.length}`);
     lines.push("");
     for (let i = 0; i < plan.steps.length; i++) {
-      const step = plan.steps[i];
+      const step = plan.steps[i]!;
       const icon = step.optional ? "◷" : "→";
       lines.push(`  ${icon} Step ${i + 1}: [${step.tool}] ${step.action}`);
     }
@@ -211,7 +211,7 @@ export class ToolRouter {
     ];
     for (const pattern of patterns) {
       const match = query.match(pattern);
-      if (match) return match[1];
+      if (match) return match[1]!;
     }
     // Fallback: return the first CamelCase word
     const camelCase = query.match(/\b[A-Z][a-zA-Z0-9]+\b/);
@@ -222,7 +222,7 @@ export class ToolRouter {
     if (tool === "structural") {
       // Try to extract an AST pattern from quotes
       const quoted = query.match(/["'`]([^"'`]+)["'`]/);
-      if (quoted) return quoted[1];
+      if (quoted) return quoted[1]!;
     }
     return "";
   }

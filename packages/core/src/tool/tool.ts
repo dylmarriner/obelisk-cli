@@ -5,6 +5,7 @@ import { Effect, JsonSchema, Schema } from "effect"
 import type { AgentV2 } from "../agent"
 import type { SessionMessage } from "../session/message"
 import type { SessionSchema } from "../session/schema"
+import { Autopilot } from "./autopilot"
 
 export interface Context {
   readonly sessionID: SessionSchema.ID
@@ -91,6 +92,11 @@ export function make<
     settle: (call, context) =>
       Schema.decodeUnknownEffect(config.input)(call.input).pipe(
         Effect.mapError((error) => new ToolFailure({ message: `Invalid tool input: ${error.message}` })),
+        Effect.flatMap((input) => {
+          const denial = Autopilot.checkPolicy(call.name, input)
+          if (denial) return Effect.fail(new ToolFailure({ message: denial }))
+          return Effect.succeed(input)
+        }),
         Effect.flatMap((input) =>
           config.execute(input, context).pipe(
             Effect.flatMap((output) =>
@@ -112,7 +118,7 @@ export function make<
             ),
             Effect.map(({ output, structured }) => ({
               structured,
-              content:
+              content: (
                 config.toModelOutput?.({ input, output }).map((part) =>
                   part.type === "text"
                     ? { type: "text" as const, text: part.text }
@@ -122,7 +128,10 @@ export function make<
                         mime: part.mime,
                         name: part.name,
                       },
-                ) ?? (typeof output === "string" ? [{ type: "text" as const, text: output }] : []),
+                ) ?? (typeof output === "string" ? [{ type: "text" as const, text: output }] : [])
+              ).map((part) =>
+                part.type === "text" ? { ...part, text: Autopilot.optimizeText(part.text) } : part,
+              ),
             })),
           ),
         ),

@@ -1,5 +1,5 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
@@ -59,8 +59,8 @@ const OptimizeInputCommand = effectCmd({
       : yield* Effect.promise(() => readStdin())
 
     if (!text) {
-      Console.log("  No input provided. Pipe text or provide a file.")
-      Console.log("")
+      console.log("  No input provided. Pipe text or provide a file.")
+      console.log("")
       return
     }
 
@@ -74,7 +74,7 @@ const OptimizeInputCommand = effectCmd({
     const optimizer = new InputOptimizer({
       ...baseOptions,
       terseLevel: args.terse as any,
-      reversible: !args.noReversible,
+      reversible: !args["no-reversible"],
     })
 
     const { text: optimized, report } = optimizer.optimize(text, args.file || "stdin")
@@ -84,27 +84,27 @@ const OptimizeInputCommand = effectCmd({
       return
     }
 
-    Console.log("")
-    Console.log("  Input Optimization Report")
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Input tokens:     ${report.inputTokens.toLocaleString()}`)
-    Console.log(`  Output tokens:    ${report.outputTokens.toLocaleString()}`)
-    Console.log(`  Saved:            ${report.savedTokens.toLocaleString()} (${report.savedPercent.toFixed(1)}%)`)
-    Console.log("")
+    console.log("")
+    console.log("  Input Optimization Report")
+    console.log("  " + "─".repeat(40))
+    console.log(`  Input tokens:     ${report.inputTokens.toLocaleString()}`)
+    console.log(`  Output tokens:    ${report.outputTokens.toLocaleString()}`)
+    console.log(`  Saved:            ${report.savedTokens.toLocaleString()} (${report.savedPercent.toFixed(1)}%)`)
+    console.log("")
 
     if (report.layers.length > 0) {
-      Console.log("  Layers applied:")
+      console.log("  Layers applied:")
       for (const layer of report.layers) {
         const icon = layer.reversible ? "↩" : "→"
         console.log(`    ${icon} ${layer.name.padEnd(20)} saved ${layer.savedTokens.toLocaleString()} tok`)
       }
-      Console.log("")
+      console.log("")
     }
 
     if (report.handle) {
-      Console.log(`  Reversible handle: ${report.handle}`)
-      Console.log(`  Restore with: obelisk optimize restore ${report.handle}`)
-      Console.log("")
+      console.log(`  Reversible handle: ${report.handle}`)
+      console.log(`  Restore with: obelisk optimize restore ${report.handle}`)
+      console.log("")
     }
 
     // Output the compressed text
@@ -149,14 +149,14 @@ const OptimizeOutputCommand = effectCmd({
       : yield* Effect.promise(() => readStdin())
 
     if (!text) {
-      Console.log("  No input provided. Pipe text or provide a file.")
-      Console.log("")
+      console.log("  No input provided. Pipe text or provide a file.")
+      console.log("")
       return
     }
 
     const optimizer = new OutputOptimizer({
-      maxOutputTokens: args.maxTokens,
-      maxLines: args.maxLines,
+      maxOutputTokens: args["max-tokens"],
+      maxLines: args["max-lines"],
     })
 
     const outputType = args.type === "auto" ? undefined : args.type
@@ -167,27 +167,27 @@ const OptimizeOutputCommand = effectCmd({
       return
     }
 
-    Console.log("")
-    Console.log("  Output Optimization Report")
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Input tokens:     ${report.inputTokens.toLocaleString()}`)
-    Console.log(`  Output tokens:    ${report.outputTokens.toLocaleString()}`)
-    Console.log(`  Saved:            ${report.savedTokens.toLocaleString()} (${report.savedPercent.toFixed(1)}%)`)
-    Console.log(`  Truncated:        ${report.truncated ? "⚠ yes" : "✓ no"}`)
-    Console.log("")
+    console.log("")
+    console.log("  Output Optimization Report")
+    console.log("  " + "─".repeat(40))
+    console.log(`  Input tokens:     ${report.inputTokens.toLocaleString()}`)
+    console.log(`  Output tokens:    ${report.outputTokens.toLocaleString()}`)
+    console.log(`  Saved:            ${report.savedTokens.toLocaleString()} (${report.savedPercent.toFixed(1)}%)`)
+    console.log(`  Truncated:        ${report.truncated ? "⚠ yes" : "✓ no"}`)
+    console.log("")
 
     if (report.layers.length > 0) {
-      Console.log("  Layers applied:")
+      console.log("  Layers applied:")
       for (const layer of report.layers) {
         console.log(`    ✓ ${layer.name.padEnd(20)} saved ${layer.savedTokens.toLocaleString()} tok`)
       }
-      Console.log("")
+      console.log("")
     }
 
     if (report.handle) {
-      Console.log(`  Reversible handle: ${report.handle}`)
-      Console.log(`  Restore with: obelisk optimize restore ${report.handle}`)
-      Console.log("")
+      console.log(`  Reversible handle: ${report.handle}`)
+      console.log(`  Restore with: obelisk optimize restore ${report.handle}`)
+      console.log("")
     }
 
     process.stdout.write(optimized + EOL)
@@ -202,14 +202,15 @@ const OptimizeRestoreCommand = effectCmd({
     yargs.positional("handle", {
       type: "string",
       describe: "blob handle to restore",
+      demandOption: true,
     }),
   handler: Effect.fn("Cli.optimize.restore")(function* (args) {
     const store = new ReversibleBlobStore()
     const original = store.restore(args.handle)
 
     if (!original) {
-      Console.log(`  Blob not found: ${args.handle}`)
-      Console.log("")
+      console.log(`  Blob not found: ${args.handle}`)
+      console.log("")
       return
     }
 
@@ -225,12 +226,12 @@ const OptimizeStatsCommand = effectCmd({
     const store = new ReversibleBlobStore()
     const stats = store.stats()
 
-    Console.log("")
-    Console.log("  Reversible Blob Store")
-    Console.log("  " + "─".repeat(40))
-    Console.log(`  Total blobs: ${stats.totalBlobs}`)
-    Console.log(`  Total size:  ${formatBytes(stats.totalSizeBytes)}`)
-    Console.log("")
+    console.log("")
+    console.log("  Reversible Blob Store")
+    console.log("  " + "─".repeat(40))
+    console.log(`  Total blobs: ${stats.totalBlobs}`)
+    console.log(`  Total size:  ${formatBytes(stats.totalSizeBytes)}`)
+    console.log("")
   }),
 })
 
@@ -247,7 +248,7 @@ const OptimizeGcCommand = effectCmd({
   handler: Effect.fn("Cli.optimize.gc")(function* (args) {
     const store = new ReversibleBlobStore()
     const evicted = store.gc(args.days)
-    Console.log(`  Evicted ${evicted} blob(s) older than ${args.days} days.`)
+    console.log(`  Evicted ${evicted} blob(s) older than ${args.days} days.`)
   }),
 })
 
@@ -383,10 +384,10 @@ const OptimizeBenchmarkCommand = effectCmd({
   describe: "run token optimization benchmarks against sample data",
   instance: false,
   handler: Effect.fn("Cli.optimize.benchmark")(function* () {
-    Console.log("")
-    Console.log("  Token Optimization Benchmark")
-    Console.log("  " + "═".repeat(50))
-    Console.log("")
+    console.log("")
+    console.log("  Token Optimization Benchmark")
+    console.log("  " + "═".repeat(50))
+    console.log("")
 
     const profiles = [
       { name: "safe", options: SAFE_OPTIONS, expected: "40-60%" },
@@ -395,8 +396,8 @@ const OptimizeBenchmarkCommand = effectCmd({
     ]
 
     for (const sample of SAMPLE_TYPES) {
-      Console.log(`  ── ${sample.name} (${sample.type}) ──`)
-      Console.log("")
+      console.log(`  ── ${sample.name} (${sample.type}) ──`)
+      console.log("")
 
       for (const profile of profiles) {
         const optimizer = new InputOptimizer({ ...profile.options })
@@ -409,16 +410,16 @@ const OptimizeBenchmarkCommand = effectCmd({
 
         console.log(`  ${profile.name.padEnd(12)} ${bar} ${report.savedPercent.toFixed(1)}% (expected ${profile.expected})`)
       }
-      Console.log("")
+      console.log("")
     }
 
-    Console.log("  " + "═".repeat(50))
-    Console.log("  Profile guide:")
-    Console.log("    safe       — 40-60% — comment stripping, basic dedup, blob detection")
-    Console.log("    balanced   — 60-75% — plus import compaction, terse prose, pattern folding")
-    Console.log("    aggressive — 75-90% — plus ultra terse, type compact, string truncate, code ws eliminate")
-    Console.log("  All profiles are reversible — originals stored in blob store.")
-    Console.log("")
+    console.log("  " + "═".repeat(50))
+    console.log("  Profile guide:")
+    console.log("    safe       — 40-60% — comment stripping, basic dedup, blob detection")
+    console.log("    balanced   — 60-75% — plus import compaction, terse prose, pattern folding")
+    console.log("    aggressive — 75-90% — plus ultra terse, type compact, string truncate, code ws eliminate")
+    console.log("  All profiles are reversible — originals stored in blob store.")
+    console.log("")
   }),
 })
 

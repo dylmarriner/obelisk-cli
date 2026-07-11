@@ -117,7 +117,7 @@ const layer = Layer.effect(
         )
         if (instructions.length === 0) return
 
-        return [
+        const lines = [
           "<mcp_instructions>",
           ...instructions.flatMap((item) => [
             `  <server name="${item.name}">`,
@@ -126,8 +126,7 @@ const layer = Layer.effect(
           ]),
           "</mcp_instructions>",
         ]
-          .map(compact)
-          .join("\n")
+        return compact(lines.join("\n"))
       }),
     })
   }),

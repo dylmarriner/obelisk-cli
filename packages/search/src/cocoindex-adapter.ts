@@ -54,6 +54,7 @@ export interface CocoIndexStatus {
   available: boolean;
   version?: string;
   apps?: CocoIndexAppInfo[];
+  error?: string;
 }
 
 // ─── Defaults ───────────────────────────────────────────────────
@@ -88,7 +89,8 @@ export class CocoIndexAdapter {
   async status(): Promise<CocoIndexStatus> {
     try {
       const { stdout: versionOut } = await execFile(this.binary, ["--version"], { timeout: 10000 });
-      const version = versionOut.trim();
+      // Output is "cocoindex version X.Y.Z" — keep just the version number.
+      const version = versionOut.trim().replace(/^cocoindex\s+version\s+/i, "");
 
       // List apps
       const apps = await this.listApps();

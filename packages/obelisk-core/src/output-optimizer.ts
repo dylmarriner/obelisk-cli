@@ -26,6 +26,7 @@
 
 import { ReversibleBlobStore } from "./reversible-blob-store";
 import { estimateTokens } from "./input-optimizer";
+import { SecretRedactor } from "./secret-redactor";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -45,6 +46,7 @@ export interface OutputOptimizerOptions {
   foldRepeatedLogs: boolean;
   crossSourceDedup: boolean;
   reversible: boolean;
+  redactSecrets: boolean;
 }
 
 export const AGGRESSIVE_OUTPUT_OPTIONS: OutputOptimizerOptions = {
@@ -63,6 +65,7 @@ export const AGGRESSIVE_OUTPUT_OPTIONS: OutputOptimizerOptions = {
   foldRepeatedLogs: true,
   crossSourceDedup: true,
   reversible: true,
+  redactSecrets: true,
 };
 
 export interface OutputOptimizerLayer {
@@ -80,6 +83,7 @@ export interface OutputOptimizerReport {
   handle?: string;
   truncated: boolean;
   detectedType: string;
+  secretsRedacted: number;
 }
 
 // ─── Optimizer ──────────────────────────────────────────────────
@@ -88,10 +92,12 @@ export class OutputOptimizer {
   private options: OutputOptimizerOptions;
   private store: ReversibleBlobStore;
   private seenContent = new Set<string>();
+  private redactor: SecretRedactor;
 
-  constructor(options: Partial<OutputOptimizerOptions> = {}, store?: ReversibleBlobStore) {
+  constructor(options: Partial<OutputOptimizerOptions> = {}, store?: ReversibleBlobStore, redactor?: SecretRedactor) {
     this.options = { ...AGGRESSIVE_OUTPUT_OPTIONS, ...options };
     this.store = store || new ReversibleBlobStore();
+    this.redactor = redactor || new SecretRedactor();
   }
 
   optimize(text: string, outputType?: string): { text: string; report: OutputOptimizerReport } {
@@ -100,13 +106,31 @@ export class OutputOptimizer {
     let current = text;
     let truncated = false;
 
-    // Store original for reversible recovery
+    // Store original for reversible recovery — the unredacted original is
+    // intentionally preserved here; redaction only applies to what flows
+    // onward to the model, not to what `optimize restore` returns.
     let handle: string | undefined;
     if (this.options.reversible) {
       handle = this.store.store(text, outputType || "tool-output");
     }
 
-    const detectedType = outputType || this.detectOutputType(text);
+    let secretsRedacted = 0;
+    if (this.options.redactSecrets) {
+      const before = estimateTokens(current);
+      const redactResult = this.redactor.redact(current);
+      if (redactResult.findings.length > 0) {
+        current = redactResult.text;
+        secretsRedacted = redactResult.findings.reduce((sum, f) => sum + f.count, 0);
+        const after = estimateTokens(current);
+        layers.push({
+          name: "secret-redact",
+          savedTokens: before - after,
+          description: `Redacted ${secretsRedacted} secret(s): ${redactResult.findings.map((f) => f.pattern).join(", ")}`,
+        });
+      }
+    }
+
+    const detectedType = outputType || this.detectOutputType(current);
 
     // Apply type-specific compression
     switch (detectedType) {
@@ -183,6 +207,7 @@ export class OutputOptimizer {
         handle,
         truncated,
         detectedType,
+        secretsRedacted,
       },
     };
   }
@@ -590,7 +615,7 @@ export class OutputOptimizer {
       }
 
       if (count >= 3) {
-        const handle = this.store.store(lines[i], "repeated-log-line");
+        const handle = this.store.store(lines[i]!, "repeated-log-line");
         result.push(`  … [×${count} — blob:${handle}]`);
         i += count;
         continue;
@@ -621,7 +646,7 @@ export class OutputOptimizer {
         }
       }
 
-      result.push(lines[i]);
+      result.push(lines[i]!);
       i++;
     }
 

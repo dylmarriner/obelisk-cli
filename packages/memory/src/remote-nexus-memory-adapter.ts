@@ -78,11 +78,26 @@ export class RemoteNexusMemoryAdapter implements MemoryAdapter {
       throw new NexusConnectionError("Circuit breaker is open — too many recent failures");
     }
 
-    return this.request<MemoryHealth>(
+    const raw = await this.request<Record<string, unknown>>(
       this.config.healthPath,
       { method: "GET" },
       this.config.healthTimeoutMs,
     );
+
+    return {
+      ok: (raw.ok ?? raw.healthy) === true,
+      service: typeof raw.service === "string" ? raw.service : "nexus",
+      version: typeof raw.version === "string" ? raw.version : "unknown",
+      storage: typeof raw.storage === "string"
+        ? raw.storage
+        : raw.components && typeof raw.components === "object"
+          ? Object.entries(raw.components as Record<string, boolean>)
+              .filter(([, up]) => up)
+              .map(([name]) => name)
+              .join(", ")
+          : "unknown",
+      uptime: typeof raw.uptime === "number" ? raw.uptime : undefined,
+    };
   }
 
   // ─── Remember ──────────────────────────────────────────────────

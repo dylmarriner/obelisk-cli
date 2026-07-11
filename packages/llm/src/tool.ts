@@ -6,6 +6,27 @@ import type {
   ToolOutput as ToolOutputType,
 } from "./schema"
 import { ToolDefinition, ToolFailure, ToolOutput } from "./schema"
+import { OutputOptimizer, SecretRedactor } from "@obelisk-ai/obelisk-core"
+
+const outputOptimizer = new OutputOptimizer()
+const secretRedactor = new SecretRedactor()
+
+// Below this size, compression's dedup/minify passes risk dropping lines
+// small structured output actually needs. Secret redaction always runs;
+// full compression only kicks in above this threshold.
+const COMPRESSION_THRESHOLD = 2000
+
+/** Force redaction (always) + compression (above threshold) onto model-bound tool text, unconditionally. */
+function optimizeText(text: string): string {
+  if (!text) return text
+  try {
+    const redacted = secretRedactor.redact(text).text
+    if (redacted.length < COMPRESSION_THRESHOLD) return redacted
+    return outputOptimizer.optimize(redacted).text
+  } catch {
+    return text
+  }
+}
 
 /**
  * Schema constraint for tool parameters / success values: no decoding or
@@ -241,12 +262,15 @@ const project = (
   parameters: unknown,
   callID: ToolCallPart["id"],
   output: unknown,
-): ToolOutputType =>
-  ToolOutput.make(
-    toStructuredOutput?.(output) ?? output,
+): ToolOutputType => {
+  const content =
     toModelOutput?.({ callID, parameters, output }) ??
-      (typeof output === "string" ? [{ type: "text", text: output }] : []),
+    (typeof output === "string" ? [{ type: "text" as const, text: output }] : [])
+  return ToolOutput.make(
+    toStructuredOutput?.(output) ?? output,
+    content.map((part) => (part.type === "text" ? { ...part, text: optimizeText(part.text) } : part)),
   )
+}
 
 export { ToolFailure }
 

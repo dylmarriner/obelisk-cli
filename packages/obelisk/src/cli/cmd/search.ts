@@ -1,5 +1,5 @@
 import { EOL } from "os"
-import { Effect, Console } from "effect"
+import { Effect } from "effect"
 import { effectCmd } from "../effect-cmd"
 import { cmd } from "./cmd"
 import type { Argv } from "yargs"
@@ -44,27 +44,27 @@ const IndexRunCommand = effectCmd({
   handler: Effect.fn("Cli.index.run")(function* (args) {
     const repoPath = args.path || process.cwd()
     const adapter = new ZoektSearchAdapter({
-      indexDir: args.indexDir,
+      indexDir: args["index-dir"],
     })
 
-    Console.log("")
-    Console.log(`  Indexing ${repoPath}...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Indexing ${repoPath}...`)
+    console.log("")
 
     try {
       const result = args.rebuild
-        ? yield* Effect.promise(() => adapter.rebuild({ repoPath, indexDir: args.indexDir || undefined, name: args.name }))
-        : yield* Effect.promise(() => adapter.index({ repoPath, indexDir: args.indexDir || undefined, name: args.name }))
+        ? yield* Effect.promise(() => adapter.rebuild({ repoPath, indexDir: args["index-dir"] || undefined, name: args.name! }))
+        : yield* Effect.promise(() => adapter.index({ repoPath, indexDir: args["index-dir"] || undefined, name: args.name! }))
 
-      Console.log(`  ✓ Indexing complete`)
-      Console.log(`    Files:     ${result.fileCount.toLocaleString()}`)
-      Console.log(`    Size:      ${formatBytes(result.sizeBytes)}`)
-      Console.log(`    Duration:  ${(result.durationMs / 1000).toFixed(1)}s`)
-      Console.log(`    Location:  ${result.indexPath}`)
-      Console.log("")
+      console.log(`  ✓ Indexing complete`)
+      console.log(`    Files:     ${result.fileCount.toLocaleString()}`)
+      console.log(`    Size:      ${formatBytes(result.sizeBytes)}`)
+      console.log(`    Duration:  ${(result.durationMs / 1000).toFixed(1)}s`)
+      console.log(`    Location:  ${result.indexPath}`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Indexing failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Indexing failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
@@ -80,29 +80,29 @@ const IndexStatusCommand = effectCmd({
     }),
   handler: Effect.fn("Cli.index.status")(function* (args) {
     const adapter = new ZoektSearchAdapter({
-      indexDir: args.indexDir,
+      indexDir: args["index-dir"],
     })
 
-    const status = yield* Effect.promise(() => adapter.status({ indexDir: args.indexDir }))
+    const status = yield* Effect.promise(() => adapter.status({ indexDir: args["index-dir"] }))
 
-    Console.log("")
-    Console.log("  Index Status")
-    Console.log("  " + "─".repeat(40))
+    console.log("")
+    console.log("  Index Status")
+    console.log("  " + "─".repeat(40))
     if (status.indexed) {
-      Console.log(`  Status:     ✓ Ready`)
-      Console.log(`  Location:   ${status.indexPath}`)
-      Console.log(`  Size:       ${formatBytes(status.sizeBytes)}`)
-      Console.log(`  Shards:     ${status.shardCount}`)
+      console.log(`  Status:     ✓ Ready`)
+      console.log(`  Location:   ${status.indexPath}`)
+      console.log(`  Size:       ${formatBytes(status.sizeBytes)}`)
+      console.log(`  Shards:     ${status.shardCount}`)
       if (status.lastIndexed) {
-        Console.log(`  Last built: ${new Date(status.lastIndexed).toLocaleString()}`)
+        console.log(`  Last built: ${new Date(status.lastIndexed).toLocaleString()}`)
       }
     } else {
-      Console.log(`  Status:     ✗ Not indexed`)
-      Console.log(`  Location:   ${status.indexPath}`)
-      Console.log("")
-      Console.log("  Run 'obelisk index' to build the index.")
+      console.log(`  Status:     ✗ Not indexed`)
+      console.log(`  Location:   ${status.indexPath}`)
+      console.log("")
+      console.log("  Run 'obelisk index' to build the index.")
     }
-    Console.log("")
+    console.log("")
   }),
 })
 
@@ -124,30 +124,31 @@ const IndexRebuildCommand = effectCmd({
     const repoPath = args.path || process.cwd()
     const adapter = new ZoektSearchAdapter()
 
-    Console.log("")
-    Console.log(`  Rebuilding index for ${repoPath}...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Rebuilding index for ${repoPath}...`)
+    console.log("")
 
     try {
       const result = yield* Effect.promise(() =>
-        adapter.rebuild({ repoPath, name: args.name })
+        adapter.rebuild({ repoPath, name: args.name! })
       )
 
-      Console.log(`  ✓ Index rebuilt`)
-      Console.log(`    Files:     ${result.fileCount.toLocaleString()}`)
-      Console.log(`    Size:      ${formatBytes(result.sizeBytes)}`)
-      Console.log(`    Duration:  ${(result.durationMs / 1000).toFixed(1)}s`)
-      Console.log("")
+      console.log(`  ✓ Index rebuilt`)
+      console.log(`    Files:     ${result.fileCount.toLocaleString()}`)
+      console.log(`    Size:      ${formatBytes(result.sizeBytes)}`)
+      console.log(`    Duration:  ${(result.durationMs / 1000).toFixed(1)}s`)
+      console.log("")
     } catch (err) {
-      Console.log(`  ✗ Rebuild failed: ${(err as Error).message}`)
-      Console.log("")
+      console.log(`  ✗ Rebuild failed: ${(err as Error).message}`)
+      console.log("")
     }
   }),
 })
 
-export const SearchCommand = cmd({
+export const SearchCommand = effectCmd({
   command: "search <query>",
   describe: "search indexed code using Zoekt",
+  instance: false,
   builder: (yargs: Argv) =>
     yargs
       .positional("query", {
@@ -174,31 +175,31 @@ export const SearchCommand = cmd({
       }),
   handler: Effect.fn("Cli.search")(function* (args) {
     const adapter = new ZoektSearchAdapter({
-      indexDir: args.indexDir,
+      indexDir: args["index-dir"],
     })
 
-    Console.log("")
-    Console.log(`  Searching for "${args.query}"...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Searching for "${args.query}"...`)
+    console.log("")
 
     try {
       const results = yield* Effect.promise(() =>
         adapter.search({
-          query: args.query,
+          query: args.query!,
           regex: args.regex,
           file: args.file,
-          maxResults: args.maxResults,
+          maxResults: args["max-results"],
         })
       )
 
       if (results.length === 0) {
-        Console.log("  No results found.")
-        Console.log("")
+        console.log("  No results found.")
+        console.log("")
         return
       }
 
-      Console.log(`  Found ${results.length} result(s):`)
-      Console.log("")
+      console.log(`  Found ${results.length} result(s):`)
+      console.log("")
 
       for (const r of results.slice(0, 20)) {
         console.log(`    ${r.file}:${r.line}:${r.column}`)
@@ -207,17 +208,17 @@ export const SearchCommand = cmd({
       }
 
       if (results.length > 20) {
-        Console.log(`  ... and ${results.length - 20} more results`)
-        Console.log("")
+        console.log(`  ... and ${results.length - 20} more results`)
+        console.log("")
       }
     } catch (err) {
       const message = (err as Error).message
       if (message.includes("No index found")) {
-        Console.log(`  ✗ No index found. Run 'obelisk index' first.`)
+        console.log(`  ✗ No index found. Run 'obelisk index' first.`)
       } else {
-        Console.log(`  ✗ Search failed: ${message}`)
+        console.log(`  ✗ Search failed: ${message}`)
       }
-      Console.log("")
+      console.log("")
     }
   }),
 })
@@ -250,17 +251,17 @@ const CocoUpdateCommand = effectCmd({
   instance: false,
   builder: (yargs: Argv) =>
     yargs
-      .positional("script", { type: "string", describe: "path to the Python app script" })
+      .positional("script", { type: "string", describe: "path to the Python app script", demandOption: true })
       .option("name", { type: "string", describe: "app name within the script" })
       .option("live", { type: "boolean", alias: "L", describe: "watch mode", default: false })
       .option("reset", { type: "boolean", describe: "reset before running", default: false }),
   handler: Effect.fn("Cli.index.coco.update")(function* (args) {
     const adapter = new CocoIndexAdapter()
 
-    Console.log("")
-    Console.log(`  Running CocoIndex pipeline: ${args.script}`)
-    if (args.live) Console.log("  Mode: live (watching for changes)")
-    Console.log("")
+    console.log("")
+    console.log(`  Running CocoIndex pipeline: ${args.script}`)
+    if (args.live) console.log("  Mode: live (watching for changes)")
+    console.log("")
 
     const result = yield* Effect.promise(() =>
       adapter.update({
@@ -272,15 +273,15 @@ const CocoUpdateCommand = effectCmd({
     )
 
     if (result.success) {
-      Console.log(`  ✓ Pipeline completed in ${(result.durationMs / 1000).toFixed(1)}s`)
+      console.log(`  ✓ Pipeline completed in ${(result.durationMs / 1000).toFixed(1)}s`)
       if (result.output) {
         const lines = result.output.trim().split("\n").slice(-5).join("\n")
         console.log(`  ${lines}`)
       }
     } else {
-      Console.log(`  ✗ Pipeline failed: ${result.error}`)
+      console.log(`  ✗ Pipeline failed: ${result.error}`)
     }
-    Console.log("")
+    console.log("")
   }),
 })
 
@@ -291,30 +292,30 @@ const CocoStatusCommand = effectCmd({
   handler: Effect.fn("Cli.index.coco.status")(function* () {
     const adapter = new CocoIndexAdapter()
 
-    Console.log("")
-    Console.log("  CocoIndex Status")
-    Console.log("  " + "─".repeat(40))
-    Console.log("")
+    console.log("")
+    console.log("  CocoIndex Status")
+    console.log("  " + "─".repeat(40))
+    console.log("")
 
     const status = yield* Effect.promise(() => adapter.status())
 
     if (status.available) {
-      Console.log(`  ✓ CocoIndex ${status.version || "installed"}`)
-      Console.log("")
+      console.log(`  ✓ CocoIndex ${status.version || "installed"}`)
+      console.log("")
 
       if (status.apps && status.apps.length > 0) {
-        Console.log(`  Apps: ${status.apps.length}`)
+        console.log(`  Apps: ${status.apps.length}`)
         for (const app of status.apps) {
           console.log(`    ${app.name}  (${app.status})`)
         }
       } else {
-        Console.log("  No apps registered.")
+        console.log("  No apps registered.")
       }
     } else {
-      Console.log("  ✗ CocoIndex not available")
-      Console.log("  Install with: pip install cocoindex")
+      console.log("  ✗ CocoIndex not available")
+      console.log("  Install with: pip install cocoindex")
     }
-    Console.log("")
+    console.log("")
   }),
 })
 
@@ -323,21 +324,21 @@ const CocoInitCommand = effectCmd({
   describe: "scaffold a new CocoIndex project",
   instance: false,
   builder: (yargs: Argv) =>
-    yargs.positional("name", { type: "string", describe: "project name" }),
+    yargs.positional("name", { type: "string", describe: "project name", demandOption: true }),
   handler: Effect.fn("Cli.index.coco.init")(function* (args) {
     const adapter = new CocoIndexAdapter()
 
-    Console.log("")
-    Console.log(`  Scaffolding CocoIndex project: ${args.name}`)
-    Console.log("")
+    console.log("")
+    console.log(`  Scaffolding CocoIndex project: ${args.name}`)
+    console.log("")
 
     const result = yield* Effect.promise(() => adapter.init(args.name))
     if (result.success) {
-      Console.log(`  ✓ Project created at ${result.path}`)
+      console.log(`  ✓ Project created at ${result.path}`)
     } else {
-      Console.log(`  ✗ Failed: ${result.error}`)
+      console.log(`  ✗ Failed: ${result.error}`)
     }
-    Console.log("")
+    console.log("")
   }),
 })
 
@@ -347,7 +348,7 @@ const CocoEmbedCommand = effectCmd({
   instance: false,
   builder: (yargs: Argv) =>
     yargs
-      .positional("source-dir", { type: "string", describe: "source directory to index" })
+      .positional("source-dir", { type: "string", describe: "source directory to index", demandOption: true })
       .option("chunk-size", { type: "number", describe: "code chunk size in tokens", default: 1000 })
       .option("model", { type: "string", describe: "embedding model", default: "sentence-transformers/all-MiniLM-L6-v2" })
       .option("table", { type: "string", describe: "target table name", default: "code_embeddings" })
@@ -355,41 +356,41 @@ const CocoEmbedCommand = effectCmd({
   handler: Effect.fn("Cli.index.coco.embed")(function* (args) {
     const adapter = new CocoIndexAdapter()
 
-    Console.log("")
-    Console.log(`  Generating code embedding pipeline for ${args.sourceDir}...`)
-    Console.log("")
+    console.log("")
+    console.log(`  Generating code embedding pipeline for ${args["source-dir"]}...`)
+    console.log("")
 
-    const scriptPath = adapter.generateEmbeddingScript(args.sourceDir, {
-      chunkSize: args.chunkSize,
-      model: args.model,
+    const scriptPath = adapter.generateEmbeddingScript(args["source-dir"], {
+      chunkSize: args["chunk-size"],
+      model: args.model!,
       tableName: args.table,
     })
 
-    Console.log(`  ✓ Pipeline script generated:`)
-    Console.log(`    ${scriptPath}`)
-    Console.log("")
+    console.log(`  ✓ Pipeline script generated:`)
+    console.log(`    ${scriptPath}`)
+    console.log("")
 
     if (args.run) {
-      Console.log("  Running pipeline...")
-      Console.log("")
+      console.log("  Running pipeline...")
+      console.log("")
 
       const result = yield* Effect.promise(() =>
         adapter.update({ appScript: scriptPath })
       )
 
       if (result.success) {
-        Console.log(`  ✓ Indexing complete (${(result.durationMs / 1000).toFixed(1)}s)`)
+        console.log(`  ✓ Indexing complete (${(result.durationMs / 1000).toFixed(1)}s)`)
       } else {
-        Console.log(`  ✗ Indexing failed: ${result.error}`)
-        Console.log("")
-        Console.log("  You can run the pipeline manually:")
-        Console.log(`    cocoindex update ${scriptPath}`)
+        console.log(`  ✗ Indexing failed: ${result.error}`)
+        console.log("")
+        console.log("  You can run the pipeline manually:")
+        console.log(`    cocoindex update ${scriptPath}`)
       }
-      Console.log("")
+      console.log("")
     } else {
-      Console.log("  Run the pipeline with:")
-      Console.log(`    obelisk index coco update ${scriptPath}`)
-      Console.log("")
+      console.log("  Run the pipeline with:")
+      console.log(`    obelisk index coco update ${scriptPath}`)
+      console.log("")
     }
   }),
 })

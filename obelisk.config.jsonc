@@ -75,6 +75,20 @@
     }
   },
 
+  "provider": {
+    "acp": {
+      "name": "ACP Agents",
+      "npm": "file:///media/kubuntux/DEVELOPMENT1/obelisk-cli/packages/acp-client/src/index.ts",
+      "models": {
+        "claude": { "name": "Claude Code (delegate)", "tool_call": true },
+        "codex": { "name": "Codex (delegate)", "tool_call": true },
+        "hermes": { "name": "Hermes (delegate)", "tool_call": true },
+        "openclaw": { "name": "OpenClaw (delegate)", "tool_call": true },
+        "cline": { "name": "Cline (delegate)", "tool_call": true }
+      }
+    }
+  },
+
   "models": {
     "default": "anthropic/claude-sonnet",
     "fast": "qwen/qwen-coder",
